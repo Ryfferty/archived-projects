@@ -1,0 +1,5 @@
+pnpm exec lint-staged
+
+# 运行 Electron 客户端单元测试
+echo "🧪 Running Electron unit tests..."
+pnpm --filter agent-electron-client run test:run

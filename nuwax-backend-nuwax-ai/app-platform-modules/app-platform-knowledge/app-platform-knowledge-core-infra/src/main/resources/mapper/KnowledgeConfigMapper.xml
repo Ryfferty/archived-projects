@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.knowledge.core.infra.dao.mapper.KnowledgeConfigMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeConfig">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="pubStatus" column="pub_status" jdbcType="OTHER"/>
+        <result property="embeddingModelId" column="embedding_model_id" jdbcType="INTEGER"/>
+        <result property="chatModelId" column="chat_model_id" jdbcType="INTEGER"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="modifiedId" column="modified_id" jdbcType="BIGINT"/>
+        <result property="modifiedName" column="modified_name" jdbcType="VARCHAR"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+    </resultMap>
+
+
+
+    <!--后端业务逻辑,公共查询逻辑1-->
+    <sql id="font_base_where">
+        <if test="queryMap.authSpaceIds != null and queryMap.authSpaceIds.size > 0">
+            and space_id in
+            <foreach collection="queryMap.authSpaceIds" item="item" index="index" separator="," open="("
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="queryMap.spaceId != null">
+            and space_id = #{queryMap.spaceId}
+        </if>
+        <if test="queryMap.name != null and queryMap.name != ''">
+            and name like concat('%',#{queryMap.name},'%')
+        </if>
+        <if test="queryMap.dataType != null">
+            and data_type = #{queryMap.dataType}
+        </if>
+
+        <if test="queryMap.creatorId != null">
+            and creator_id = #{queryMap.creatorId}
+        </if>
+
+        <include refid="SysCommonSql.base_where"></include>
+        and yn = 1
+
+    </sql>
+
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_config
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+    </select>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_config
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and  orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by created desc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+    <update id="updateKnowledgeConfigFileSize">
+    </update>
+
+    <!-- 全文检索相关查询 -->
+    <select id="queryAllKbIds" resultType="java.lang.Long">
+        select id
+        from knowledge_config
+        where yn = 1
+        order by id asc
+    </select>
+
+    <!-- 查询未同步的知识库列表 -->
+    <select id="queryUnsyncedKnowledgeBases" resultMap="BaseResultMap">
+        select *
+        from knowledge_config
+        where yn = 1
+          and _tenant_id = #{tenantId}
+          and fulltext_sync_status != 2
+        order by id asc
+    </select>
+
+    <!-- 更新知识库全文检索同步状态 -->
+    <update id="updateFulltextSyncStatus">
+        update knowledge_config
+        set fulltext_sync_status = #{status},
+            fulltext_sync_time = now(),
+            fulltext_segment_count = #{segmentCount},
+            modified = #{modified}
+        where id = #{kbId}
+    </update>
+
+    <!-- 更新知识库全文检索同步状态（不包含分段数量） -->
+    <update id="updateFulltextSyncStatusWithoutSegmentCount">
+        update knowledge_config
+        set fulltext_sync_status = #{status},
+            fulltext_sync_time = now(),
+            modified = #{modified}
+        where id = #{kbId}
+    </update>
+
+    <!-- 查询同步状态统计 -->
+    <select id="querySyncStatusStats" resultType="java.util.HashMap">
+        select 
+            coalesce(fulltext_sync_status, 0) as status,
+            count(*) as count
+        from knowledge_config
+        where yn = 1
+          and _tenant_id = #{tenantId}
+        group by fulltext_sync_status
+    </select>
+
+</mapper>

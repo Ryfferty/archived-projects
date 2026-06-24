@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.compose.infra.dao.mapper.CustomTableDefinitionMapper">
+
+
+  <resultMap id="BaseResultMap" type="com.xspaceagi.compose.infra.dao.entity.CustomTableDefinition">
+  </resultMap>
+  <!--后端业务逻辑,公共查询逻辑1-->
+  <sql id="font_base_where">
+    <if test="queryMap.spaceId != null">
+      and space_id = #{queryMap.spaceId}
+    </if>
+    <if test="queryMap.status != null">
+      and status = #{queryMap.status}
+    </if>
+    <if test="queryMap.tableName != null">
+      and table_name like concat('%',#{queryMap.tableName},'%')
+    </if>
+    <if test="queryMap.authSpaceIds != null and queryMap.authSpaceIds.size > 0">
+      and space_id in
+      <foreach collection="queryMap.authSpaceIds" item="spaceId" separator="," open="(" close=")">
+        #{spaceId}
+      </foreach>
+    </if>
+    <if test="queryMap.userId != null">
+      and creator_id = #{queryMap.userId}
+    </if>
+    <include refid="SysCommonSql.base_where"></include>
+    and yn = 1
+
+  </sql>
+
+
+  <select id="queryTotal" resultType="java.lang.Long">
+    select count(*)
+    from custom_table_definition
+    <where>
+      <include refid="font_base_where"></include>
+    </where>
+  </select>
+
+  <select id="queryList" resultMap="BaseResultMap">
+    select
+    *
+    from custom_table_definition
+    <where>
+      <include refid="font_base_where"></include>
+    </where>
+    <choose>
+      <when test="orderColumns != null and  orderColumns.size > 0">
+        <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+          <if test="entity != null">
+            ${entity.column}
+            <if test="!entity.asc">
+              desc
+            </if>
+          </if>
+        </foreach>
+      </when>
+      <otherwise>
+        order by created desc
+      </otherwise>
+    </choose>
+    limit #{startIndex}, #{pageSize}
+  </select>
+</mapper>

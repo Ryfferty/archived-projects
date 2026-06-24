@@ -1,0 +1,1 @@
+package com.xspaceagi.domain.adaptor.impl;

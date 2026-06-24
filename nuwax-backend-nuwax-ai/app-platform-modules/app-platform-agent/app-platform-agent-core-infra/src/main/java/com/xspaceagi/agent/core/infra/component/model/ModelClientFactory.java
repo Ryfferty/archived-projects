@@ -1,0 +1,315 @@
+package com.xspaceagi.agent.core.infra.component.model;
+
+import com.google.common.collect.Lists;
+import com.xspaceagi.agent.core.adapter.dto.config.ModelConfigDto;
+import com.xspaceagi.agent.core.infra.component.agent.AgentContext;
+import com.xspaceagi.agent.core.infra.component.model.anthropic.AnthropicChatModel;
+import com.xspaceagi.agent.core.infra.component.model.anthropic.AnthropicChatOptions;
+import com.xspaceagi.agent.core.infra.component.model.anthropic.api.AnthropicApi;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiChatModel;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiChatOptions;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiEmbeddingModel;
+import com.xspaceagi.agent.core.infra.component.model.openai.OpenAiEmbeddingOptions;
+import com.xspaceagi.agent.core.infra.component.model.openai.api.OpenAiApi;
+import com.xspaceagi.agent.core.infra.component.model.strategy.WeightedRoundRobinStrategy;
+import com.xspaceagi.agent.core.infra.rpc.ModelApiProxyRpcService;
+import com.xspaceagi.agent.core.spec.enums.ModelApiProtocolEnum;
+import com.xspaceagi.agent.core.spec.enums.ModelCapabilityEnum;
+import com.xspaceagi.modelproxy.sdk.service.dto.BackendModelDto;
+import com.xspaceagi.modelproxy.sdk.service.dto.FrontendModelDto;
+import com.xspaceagi.system.sdk.common.TraceContext;
+import com.xspaceagi.system.spec.common.RequestContext;
+import io.micrometer.observation.ObservationRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Component
+public class ModelClientFactory {
+
+    private final RestClient.Builder restClientBuilder = RestClient.builder().requestFactory(getRequestFactory());
+
+    private final WebClient.Builder webClientBuilder = WebClient.builder();
+
+    private final ExecutorService ex = Executors.newCachedThreadPool(new ThreadFactory() {
+
+        private final AtomicInteger nextId = new AtomicInteger();
+
+        public Thread newThread(@NotNull Runnable r) {
+            String name = "HttpClient-Custom-Worker-" + this.nextId.getAndIncrement();
+            Thread t = new Thread((ThreadGroup) null, r, name, 0L, false);
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
+    private ClientHttpRequestFactory getRequestFactory() {
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        factory.setConnectTimeout(15000);
+        factory.setConnectionRequestTimeout(Duration.ofSeconds(60));
+        return factory;
+    }
+
+    private ModelApiProxyRpcService modelApiProxyRpcService;
+
+    @Resource
+    private WeightedRoundRobinStrategy weightedRoundRobinStrategy;
+
+    @PostConstruct
+    private void init() {
+        // Disable HttpClient's keep-alive feature, which may cause connection timeout in some network environments
+        System.setProperty("jdk.httpclient.keepalive.timeout", "0");
+        webClientBuilder.filter(WebClientRequestAndResponseFilter.requestFilter)
+                .filter(WebClientRequestAndResponseFilter.responseFilter)
+                .clientConnector(new JdkClientHttpConnector(ex));
+    }
+
+    @Autowired
+    public void setModelApiProxyRpcService(ModelApiProxyRpcService modelApiProxyRpcService) {
+        this.modelApiProxyRpcService = modelApiProxyRpcService;
+    }
+
+    private WebClient.Builder cloneWebClientBuilder() {
+        return webClientBuilder.clone();
+    }
+
+    public ChatClient createChatClient(ModelConfigDto model) {
+        ModelContext modelContext = new ModelContext();
+        String traceId = UUID.randomUUID().toString().replace("-", "");
+        modelContext.setTraceContext(TraceContext.builder()
+                .userId(-1L)
+                .billUserId(-1L)
+                .conversationId(traceId)
+                .traceId(traceId)
+                .tenantId(RequestContext.get().getTenantId())
+                .enableSubscription(false)
+                .build());
+        if (model.getId() != null) {
+            modelContext.getTraceContext().setTraceTargets(Lists.newArrayList(TraceContext.TraceTarget.builder().targetId(model.getId().toString()).targetType(TraceContext.TraceTargetType.Model).build()));
+        }
+        modelContext.setRequestId(traceId);
+        modelContext.setConversationId(traceId);
+        modelContext.setModelConfig(model);
+        return createChatClient(modelContext, model, List.of());
+    }
+
+    public EmbeddingModel createEmbeddingModel(ModelConfigDto model) {
+        Assert.isTrue(!model.getApiInfoList().isEmpty(), "Model configuration error");
+        ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
+        if (apiInfo == null) {
+            return null;
+        }
+        String baseUrl = completeBaseUrl(apiInfo.getUrl());
+        OpenAiApi openAiApi = new OpenAiApi(baseUrl, new SimpleApiKey(apiInfo.getKey()), CollectionUtils.toMultiValueMap(Map.of()),
+                "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(),
+                RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+        return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, OpenAiEmbeddingOptions.builder()
+                .model(model.getModel())
+                .dimensions(model.getDimension())
+                .build()
+                , RetryUtils.DEFAULT_RETRY_TEMPLATE);
+    }
+
+    public ChatClient createChatClient(ModelContext modelContext, ModelConfigDto model, List<ToolCallback> functionCallbacks) {
+        return createChatClient(modelContext, model, functionCallbacks, true);
+    }
+
+    public ChatClient createChatClient(ModelContext modelContext, ModelConfigDto model, List<ToolCallback> functionCallbacks, Boolean withProxyToolCalls) {
+        Assert.isTrue(!model.getApiInfoList().isEmpty(), "Model configuration error");
+        ModelConfigDto.ApiInfo apiInfo = weightedRoundRobinStrategy.selectApi(model);
+        if (apiInfo == null) {
+            return null;
+        }
+
+        boolean isReasoningModel = model.getIsReasonModel() != null && model.getIsReasonModel() == 1;
+        Double temperature = model.getTemperature() == null || model.getTemperature() > 1 || model.getTemperature() <= 0 ? 1 : model.getTemperature();
+        Double topP = model.getTopP() == null || model.getTopP() <= 0 || model.getTopP() > 1 ? 0.7 : model.getTopP();
+        ChatModel chatModel = null;
+        String requestId = modelContext == null || modelContext.getRequestId() == null ? "" : modelContext.getRequestId();
+        AgentContext agentContext = modelContext != null ? modelContext.getAgentContext() : null;
+        BackendModelDto backendModelDto = new BackendModelDto();
+        if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
+            String baseUrl = completeBaseUrl(apiInfo.getUrl());
+            backendModelDto.setBaseUrl(baseUrl);
+        } else {
+            backendModelDto.setBaseUrl(apiInfo.getUrl());
+        }
+        backendModelDto.setApiKey(apiInfo.getKey());
+        backendModelDto.setModelName(model.getModel());
+        backendModelDto.setProtocol(model.getApiProtocol().name());
+        backendModelDto.setScope(model.getScope().name());
+        backendModelDto.setModelId(model.getId());
+        backendModelDto.setUserName(agentContext == null || agentContext.getUser() == null ? "" : agentContext.getUser().getUserName());
+        backendModelDto.setConversationId(modelContext != null ? modelContext.getConversationId() : "");
+        backendModelDto.setRequestId(requestId);
+        backendModelDto.setTraceContext(modelContext == null ? TraceContext.builder().build() : modelContext.getTraceContext());
+        List<TraceContext.TraceTarget> traceTargets = backendModelDto.getTraceContext() != null ? backendModelDto.getTraceContext().getTraceTargets() : null;
+        if (!CollectionUtils.isEmpty(traceTargets)) {
+            traceTargets.get(traceTargets.size() - 1).setSpaceId(model.getSpaceId());
+        }
+        String siteUrl = agentContext == null || agentContext.getTenantConfig() == null ? "" : agentContext.getTenantConfig().getSiteUrl();
+        FrontendModelDto frontendModelDto = modelApiProxyRpcService.generateUserFrontendModelConfig(model.getTenantId(), agentContext == null || agentContext.getUser() == null ? -1L : agentContext.getUser().getId()
+                , agentContext == null || agentContext.getAgentConfig() == null ? -1L : agentContext.getAgentConfig().getId(), backendModelDto, siteUrl);
+        apiInfo = new ModelConfigDto.ApiInfo();
+        apiInfo.setKey(frontendModelDto.getApiKey());
+        apiInfo.setUrl(frontendModelDto.getBaseUrl());
+
+
+        if (model.getApiProtocol() == ModelApiProtocolEnum.OpenAI) {
+            var promptOptions = OpenAiChatOptions.builder()
+                    .model(model.getModel())
+                    .internalToolExecutionEnabled(withProxyToolCalls)
+                    .maxTokens(model.getMaxTokens())
+                    .temperature(temperature)
+                    .topP(topP)
+                    .extraBody(buildExtraBody(model))
+                    .build();
+            OpenAiApi api = new OpenAiApi(apiInfo.getUrl(), new SimpleApiKey(apiInfo.getKey()), CollectionUtils.toMultiValueMap(Map.of()),
+                    "/chat/completions", "/embeddings", restClientBuilder.clone(), cloneWebClientBuilder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+            chatModel = new OpenAiChatModel(api, promptOptions, DefaultToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+        }
+
+        if (model.getApiProtocol() == ModelApiProtocolEnum.Ollama) {
+            OllamaChatOptions promptOptions = OllamaChatOptions.builder()
+                    .model(model.getModel())
+                    .internalToolExecutionEnabled(withProxyToolCalls)
+                    .temperature(temperature)
+                    .topP(topP)
+                    .build();
+            promptOptions.setMaxTokens(model.getMaxTokens());
+            OllamaApi api = OllamaApi.builder()
+                    .baseUrl(apiInfo.getUrl())
+                    .restClientBuilder(restClientBuilder.clone())
+                    .webClientBuilder(cloneWebClientBuilder())
+                    .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+                    .build();//(apiInfo.getUrl(), restClientBuilder.clone(), webClientBuilder.clone(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
+            chatModel = OllamaChatModel.builder().defaultOptions(promptOptions).ollamaApi(api).build();
+        }
+        if (model.getApiProtocol() == ModelApiProtocolEnum.Anthropic) {
+            int budget = Math.min(model.getMaxTokens() / 4, 1024);
+            AnthropicChatOptions anthropicChatOptions = AnthropicChatOptions.builder()
+                    .model(model.getModel())
+                    .internalToolExecutionEnabled(withProxyToolCalls)
+                    .temperature(temperature)
+                    .topP(topP)
+                    .maxTokens(model.getMaxTokens())
+                    .thinking(new AnthropicApi.ChatCompletionRequest.ThinkingConfig(isReasoningModel ? AnthropicApi.ThinkingType.ENABLED : AnthropicApi.ThinkingType.DISABLED, budget))
+                    .build();
+            AnthropicApi api = AnthropicApi.builder()
+                    .apiKey(apiInfo.getKey())
+                    .baseUrl(apiInfo.getUrl())
+                    .restClientBuilder(restClientBuilder.clone())
+                    .webClientBuilder(cloneWebClientBuilder())
+                    .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+                    .build();
+            chatModel = new AnthropicChatModel(api, anthropicChatOptions, ToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+        }
+
+        Assert.notNull(chatModel, "chatModel must be non-null");
+        ChatClient.Builder builder = ChatClient.builder(chatModel);
+        if (functionCallbacks != null) {
+            for (ToolCallback functionCallback : functionCallbacks) {
+                builder.defaultToolCallbacks(functionCallback);
+            }
+        }
+        return builder.build();
+    }
+
+    private Map<String, Object> buildExtraBody(ModelConfigDto model) {
+        boolean thinkingModel = (model.getTypes() != null && model.getTypes().contains(ModelCapabilityEnum.Reasoning));
+        if (!thinkingModel) {
+            return null;
+        }
+        boolean thinking = model.getIsReasonModel() != null && model.getIsReasonModel() == 1;
+        if ("alibaba-cn".equals(model.getPid()) || "alibaba-coding-plan-cn".equals(model.getPid()) || "nuwax".equals(model.getPid())) {
+            return Map.of("enable_thinking", thinking);
+        }
+        return Map.of("thinking", Map.of("type", thinking ? "enabled" : "disabled"));
+    }
+
+    private static String completeBaseUrl(String baseUrl) {
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        String v = extractVersionFromUrl(baseUrl);
+        if (v == null) {
+            if (!hasVersion(baseUrl)) {
+                baseUrl = baseUrl + "/v1";
+            }
+        }
+        return baseUrl;
+    }
+
+    private static String normalizeAnthropicBaseUrl(String baseUrl) {
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl;
+    }
+
+    public static String extractVersionFromUrl(String url) {
+        // Define regex pattern to match version information in URL (e.g., v1, v2, v3)
+        String regex = "/(v\\d+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+
+        if (matcher.find()) {
+            return matcher.group(1); // Return the matched version information
+        } else {
+            return null; // Return null if no match is found
+        }
+    }
+
+    public static boolean hasVersion(String url) {
+        String regex = "(/([^\\s\\.]*)((-v|_v|version|_ver|-ver)\\d+))";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+
+        if (matcher.find()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @PreDestroy
+    private void destroy() {
+        try {
+            ex.shutdown();
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+}

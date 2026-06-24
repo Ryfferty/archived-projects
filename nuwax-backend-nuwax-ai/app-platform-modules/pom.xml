@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-modules</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>app-platform-agent</module>
+        <module>app-platform-knowledge</module>
+        <module>app-platform-compose</module>
+        <module>app-platform-log</module>
+        <module>platform-system</module>
+        <module>app-platform-eco-market</module>
+        <module>app-platform-mcp</module>
+        <module>app-platform-custom-page</module>
+        <module>app-platform-sandbox</module>
+        <module>app-platform-model-proxy</module>
+        <module>app-platform-memory</module>
+        <module>app-platform-im</module>
+        <module>app-platform-credit</module>
+        <module>app-platform-subscription</module>
+        <module>app-platform-pricing</module>
+        <module>app-platform-pay</module>
+        <module>app-platform-bill</module>
+        <module>app-platform-file</module>
+    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.73.Final</version>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.eco.market.spec.infra.dao.mapper.EcoMarketClientPublishConfigMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.eco.market.spec.infra.dao.entity.EcoMarketClientPublishConfig">
+            <id property="id" column="id" />
+            <result property="uid" column="uid" />
+            <result property="name" column="name" />
+            <result property="description" column="description" />
+            <result property="dataType" column="data_type" />
+            <result property="targetType" column="target_type" />
+            <result property="targetSubType" column="target_sub_type" />
+            <result property="targetId" column="target_id" />
+            <result property="categoryCode" column="category_code" />
+            <result property="categoryName" column="category_name" />
+            <result property="ownedFlag" column="owned_flag" />
+            <result property="shareStatus" column="share_status" />
+            <result property="useStatus" column="use_status" />
+            <result property="publishTime" column="publish_time" />
+            <result property="offlineTime" column="offline_time" />
+            <result property="versionNumber" column="version_number" />
+            <result property="author" column="author" />
+            <result property="publishDoc" column="publish_doc" />
+            <result property="configParamJson" column="config_param_json" />
+            <result property="configJson" column="config_json" />
+            <result property="icon" column="icon" />
+            <result property="tenantId" column="_tenant_id" />
+            <result property="spaceId" column="space_id" />
+            <result property="createClientId" column="create_client_id" />
+            <result property="created" column="created" />
+            <result property="creatorId" column="creator_id" />
+            <result property="creatorName" column="creator_name" />
+            <result property="modified" column="modified" />
+            <result property="modifiedId" column="modified_id" />
+            <result property="modifiedName" column="modified_name" />
+            <result property="yn" column="yn" />
+            <result property="pageZipUrl" column="page_zip_url" />
+    </resultMap>
+ <!--后端业务逻辑,公共查询逻辑1-->
+ <sql id="font_base_where">
+    <if test="queryMap.name != null">
+        and name like concat('%',#{queryMap.name},'%')
+    </if>
+    <if test="queryMap.dataType != null">
+        and data_type = #{queryMap.dataType}
+    </if>
+    <if test="queryMap.targetId != null">
+        and target_id = #{queryMap.targetId}
+    </if>
+    <if test="queryMap.targetType != null">
+        and target_type = #{queryMap.targetType}
+    </if>
+     <choose>
+         <when test="queryMap.targetSubType != null and queryMap.targetSubType == 'ChatBot'">
+             and target_sub_type in ('ChatBot','Single')
+         </when>
+         <when test="queryMap.targetSubType != null and queryMap.targetSubType != 'ChatBot'">
+             and target_sub_type = #{queryMap.targetSubType}
+         </when>
+     </choose>
+    <if test="queryMap.categoryCode != null">
+        and category_code = #{queryMap.categoryCode}
+    </if>
+    <if test="queryMap.shareStatus != null">
+        and share_status = #{queryMap.shareStatus}
+    </if>
+    <if test="queryMap.useStatus != null">
+        and use_status = #{queryMap.useStatus}
+    </if>
+    <if test="queryMap.author != null">
+        and author like concat('%',#{queryMap.author},'%')
+    </if>
+    <if test="queryMap.ownedFlag != null">
+        and owned_flag = #{queryMap.ownedFlag}
+    </if>
+
+    <include refid="SysCommonSql.base_where"></include>
+    and yn = 1
+
+</sql>
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from eco_market_client_publish_config
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+    </select>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select
+        *
+        from eco_market_client_publish_config
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and  orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by created desc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+</mapper>

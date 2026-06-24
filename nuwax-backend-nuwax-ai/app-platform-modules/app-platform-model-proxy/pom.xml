@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-modules</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-model-proxy</artifactId>
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <modules>
+        <module>app-platform-model-proxy-spec</module>
+        <module>app-platform-model-proxy-sdk</module>
+        <module>app-platform-model-proxy-infra</module>
+        <module>app-platform-model-proxy-domain</module>
+        <module>app-platform-model-proxy-application</module>
+        <module>app-platform-model-proxy-adapter</module>
+        <module>app-platform-model-proxy-ui</module>
+        <module>app-platform-model-proxy-web</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-sdk</artifactId>
+        </dependency>
+    </dependencies>
+</project>

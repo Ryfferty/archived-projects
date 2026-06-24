@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>app-platform-log</artifactId>
+        <groupId>com.xspaceagi</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>app-platform-log-api</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>app-platform-log-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xspaceagi</groupId>
+            <artifactId>system-domain</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 打包插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <descriptors>
+                        <!-- 打包配置：必须在对应目录下创建repack.xml的打包配置文件 -->
+                        <descriptor>src/main/resources/assemblies/repack.xml</descriptor>
+                    </descriptors>
+                </configuration>
+            </plugin>
+            <!-- install插件，定制在mvn install过程使用哪个jar包安装到本地 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+                <executions>
+                    <execution>
+                        <id>install-file</id>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <phase>install</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- install配置，指定将哪个目录下的jar包install为这个工程的jar -->
+                    <file>${project.build.directory}/${project.build.finalName}-repack.jar</file>
+                    <!--
+                    install配置，指定将install的jar打包使用的pom.xml文件，
+                    即其他依赖这个jar包的工程按照哪个pom.xml文件来解析依赖
+                    -->
+                    <pomFile>src/main/resources/install-pom.xml</pomFile>
+                </configuration>
+            </plugin>
+            <!-- deploy插件，定制在mvn deploy过程使用哪个jar包发布到仓库 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <executions>
+                    <execution>
+                        <id>deploy-file</id>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <!-- 跳过默认的发布包 -->
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- deploy配置，指定将哪个目录下的jar包发布为这个工程的jar -->
+                    <file>${project.build.directory}/${project.build.finalName}-repack.jar</file>
+                    <!-- 发布地址 -->
+                    <url>http://local-maven.space.com/nexus/content/repositories/snapshots/</url>
+                    <repositoryId>nexus-snapshots</repositoryId>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>${project.artifactId}</artifactId>
+                    <version>${project.version}</version>
+                    <packaging>jar</packaging>
+                    <!--
+                    deploy配置，指定将deploy的jar打包使用的pom.xml文件，
+                    即其他依赖这个jar包的工程按照哪个pom.xml文件来解析依赖
+                    -->
+                    <pomFile>src/main/resources/install-pom.xml</pomFile>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+
+
+</project>

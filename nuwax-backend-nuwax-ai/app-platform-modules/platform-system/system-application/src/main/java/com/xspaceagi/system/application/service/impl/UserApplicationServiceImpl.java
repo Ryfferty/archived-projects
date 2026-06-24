@@ -1,0 +1,402 @@
+package com.xspaceagi.system.application.service.impl;
+
+import cn.hutool.core.util.RandomUtil;
+import com.baomidou.dynamic.datasource.annotation.DSTransactional;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xspaceagi.credit.sdk.dto.CreditAddRequest;
+import com.xspaceagi.credit.sdk.rpc.ICreditRpcService;
+import com.xspaceagi.credit.spec.enums.CreditTypeEnum;
+import com.xspaceagi.system.application.dto.*;
+import com.xspaceagi.system.application.service.*;
+import com.xspaceagi.system.domain.service.UserDomainService;
+import com.xspaceagi.system.infra.dao.entity.Space;
+import com.xspaceagi.system.infra.dao.entity.SysGroup;
+import com.xspaceagi.system.infra.dao.entity.User;
+import com.xspaceagi.system.infra.dao.service.UserService;
+import com.xspaceagi.system.spec.common.RequestContext;
+import com.xspaceagi.system.spec.common.UserContext;
+import com.xspaceagi.system.spec.dto.PageQueryVo;
+import com.xspaceagi.system.spec.enums.AuthTypeEnum;
+import com.xspaceagi.system.spec.enums.ErrorCodeEnum;
+import com.xspaceagi.system.spec.enums.GroupEnum;
+import com.xspaceagi.system.spec.enums.I18nSideEnum;
+import com.xspaceagi.system.spec.exception.BizException;
+import com.xspaceagi.system.spec.exception.BizExceptionCodeEnum;
+import com.xspaceagi.system.spec.utils.MD5;
+import com.xspaceagi.system.spec.utils.RedisUtil;
+import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.time.DateUtils.addDays;
+
+@Service
+public class UserApplicationServiceImpl implements UserApplicationService {
+
+    @Resource
+    private UserDomainService userDomainService;
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
+
+    @Resource
+    private SysRoleApplicationService sysRoleApplicationService;
+    @Resource
+    private SysUserPermissionCacheService sysUserPermissionCacheService;
+
+    @Resource
+    private RedisUtil redisUtil;
+
+    @Resource
+    private SysGroupApplicationService sysGroupApplicationService;
+
+    @Resource
+    private I18nApplicationService i18nApplicationService;
+
+    @Resource
+    private I18nLangApplicationService i18nLangApplicationService;
+
+    @Resource
+    private ICreditRpcService iCreditRpcService;
+
+    @Override
+    @DSTransactional
+    public void add(UserDto userDto) {
+        if (StringUtils.isNotBlank(userDto.getEmail())) {
+            if (userDomainService.queryByEmail(userDto.getEmail()) != null) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailAlreadyInUse);
+            }
+        }
+        if (StringUtils.isNotBlank(userDto.getPhone())) {
+            if (userDomainService.queryByPhone(userDto.getPhone()) != null) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemPhoneAlreadyInUse);
+            }
+        }
+        if (StringUtils.isBlank(userDto.getPassword())) {
+            userDto.setPassword(UUID.randomUUID().toString());
+        }
+        long pre = System.currentTimeMillis() / 10000L;
+        userDto.setId(pre * 10 + redisUtil.increment("new_user_uid:" + pre, 1));
+        if (StringUtils.isBlank(userDto.getUserName())) {
+            String userName = "user" + userDto.getId();
+            userDto.setUserName(userName);
+        } else {
+            // username不能为纯数字
+            if (userDto.getUserName().matches("^[0-9]+$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameDigitsOnlyForbidden);
+            }
+            User user = userDomainService.queryByUserName(userDto.getUserName());
+            if (user != null) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameAlreadyInUse);
+            }
+            // 用户名禁止为user开头后面为10位的纯数字
+            if (userDto.getUserName().matches("^user[0-9]{10}$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameFormatInvalid);
+            }
+        }
+        if (StringUtils.isNotBlank(userDto.getNickName())) {
+            // 昵称不能为纯数字
+            if (userDto.getNickName().matches("^[0-9]+$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemNicknameDigitsOnlyForbidden);
+            }
+        }
+        if (StringUtils.isBlank(userDto.getUid())) {
+            userDto.setUid(userDto.getId().toString());
+        }
+        User user = new User();
+        BeanUtils.copyProperties(userDto, user);
+        userDomainService.add(user);
+        userDto.setId(user.getId());
+        // 创建个人空间
+        SpaceDto spaceDto = new SpaceDto();
+        spaceDto.setName("个人空间");
+        spaceDto.setCreatorId(user.getId());
+        spaceDto.setType(Space.Type.Personal);
+        spaceDto.setDescription("个人空间");
+        spaceApplicationService.add(spaceDto);
+
+        // 新增用户后，为其绑定默认用户组（若当前无用户组绑定）
+        Long userId = user.getId();
+        List<SysGroup> groups = sysGroupApplicationService.getGroupListByUserId(userId);
+        if (groups == null || groups.isEmpty()) {
+            SysGroup defaultGroup = sysGroupApplicationService.getGroupByCode(GroupEnum.DEFAULT_GROUP.getCode());
+            if (defaultGroup != null && defaultGroup.getId() != null) {
+                UserContext userContext = buildUserContext(userId, userDto);
+                sysGroupApplicationService.userBindGroup(userId, List.of(defaultGroup.getId()), userContext);
+            }
+        }
+
+        //注册积分发放
+        TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+        if (tenantConfigDto != null && tenantConfigDto.getEnableGiftCredit() != null && tenantConfigDto.getEnableGiftCredit() == 1
+                && tenantConfigDto.getGiftCreditAmount() != null && tenantConfigDto.getGiftCreditAmount() > 0
+                && tenantConfigDto.getGiftCreditExpire() != null && tenantConfigDto.getGiftCreditExpire() > 0) {
+            String bizNo = "REG" + userId + "-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            CreditAddRequest request = new CreditAddRequest();
+            request.setCreditType(CreditTypeEnum.ACTIVITY);
+            request.setUserId(userId);
+            request.setAmount(BigDecimal.valueOf(tenantConfigDto.getGiftCreditAmount()));
+            request.setTenantId(RequestContext.get().getTenantId());
+            request.setBizNo(bizNo);
+            request.setExpireTime(addDays(new Date(), tenantConfigDto.getGiftCreditExpire()));
+            request.setRemark("注册赠送积分（有效期" + tenantConfigDto.getGiftCreditExpire() + "天）");
+            iCreditRpcService.addCredit(request);
+        }
+    }
+
+    private UserContext buildUserContext(Long userId, UserDto userDto) {
+        RequestContext<?> ctx = RequestContext.get();
+        if (ctx != null && ctx.getUserContext() != null) {
+            return ctx.getUserContext();
+        }
+
+        Long tenantId = ctx != null ? ctx.getTenantId() : null;
+        if (tenantId == null) {
+            tenantId = userDto.getTenantId();
+        }
+
+        return UserContext.builder()
+                .userId(userId)
+                .uid(userDto.getUid())
+                .userName(userDto.getUserName())
+                .tenantId(tenantId)
+                .build();
+    }
+
+    @Override
+    public void update(UserDto userDto) {
+        Assert.notNull(userDto.getId(), "id must be non-null");
+        if (StringUtils.isNotBlank(userDto.getUserName())) {
+            // username不能为纯数字
+            if (userDto.getUserName().matches("^[0-9]+$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameDigitsOnlyForbidden);
+            }
+            User user = userDomainService.queryByUserName(userDto.getUserName());
+            if (user != null && !user.getId().equals(userDto.getId())) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameAlreadyInUse);
+            }
+            TenantConfigDto tenantConfigDto = (TenantConfigDto) RequestContext.get().getTenantConfig();
+            if (tenantConfigDto.getAuthType() != null && tenantConfigDto.getAuthType() == AuthTypeEnum.CAS.getCode()) {//2.单点登录
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameChangeDisallowedInCurrentAuthMode);
+            }
+            // 用户名禁止为user开头后面为10位的纯数字
+            if (user != null && !user.getId().equals(userDto.getId())
+                    && userDto.getUserName().matches("^user[0-9]{10}$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemUsernameFormatInvalid);
+            }
+        }
+
+        if (StringUtils.isNotBlank(userDto.getEmail())) {
+            if (!userDto.getEmail().matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailFormatInvalid);
+            }
+            User user = userDomainService.queryByEmail(userDto.getEmail());
+            if (user != null && !user.getId().equals(userDto.getId())) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemEmailAlreadyInUse);
+            }
+        }
+
+        if (StringUtils.isNotBlank(userDto.getNickName())) {
+            // 昵称不能为纯数字
+            if (userDto.getNickName().matches("^[0-9]+$")) {
+                throw BizException.of(ErrorCodeEnum.INVALID_PARAM, BizExceptionCodeEnum.systemNicknameDigitsOnlyForbidden);
+            }
+        }
+        User user = new User();
+        User oldUser = userDomainService.queryById(userDto.getId());
+        BeanUtils.copyProperties(userDto, user);
+        userDomainService.update(user);
+
+        // role 变更
+        if (userDto.getRole() != null && oldUser != null && oldUser.getRole() != userDto.getRole()) {
+            // 清除用户权限缓存
+            sysUserPermissionCacheService.clearCacheByUserIds(List.of(userDto.getId()));
+
+            // role 从 Admin 变为 User 时，清除用户角色绑定（普通用户不能绑定角色）
+            if (oldUser.getRole() == User.Role.Admin && userDto.getRole() == User.Role.User) {
+                sysRoleApplicationService.userBindRole(userDto.getId(), Collections.emptyList(), RequestContext.get().getUserContext());
+            }
+        }
+    }
+
+    @Override
+    public IPage<UserDto> listQuery(PageQueryVo<UserQueryDto> pageQueryVo) {
+        // 创建分页对象
+        Page<User> userPage = new Page<>(pageQueryVo.getPageNo(), pageQueryVo.getPageSize());
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        User user = new User();
+        queryWrapper.setEntity(user);
+        queryWrapper.orderByDesc(User::getId);
+        // 将PageQueryVo中的属性作为过滤条件
+        UserQueryDto userQueryDto = pageQueryVo.getQueryFilter();
+        if (userQueryDto != null) {
+            BeanUtils.copyProperties(userQueryDto, user);
+        }
+        if ("".equals(user.getUserName())) {
+            user.setUserName(null);
+        }
+        if (StringUtils.isNotBlank(user.getUserName())) {
+            // 判断userName是否为邮箱
+            if (user.getUserName().matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
+                user.setEmail(user.getUserName());
+            } else if (user.getUserName().matches("^[0-9]{11}$")) {// 判断是否为11位数字
+                user.setPhone(user.getUserName());
+            } else {
+                queryWrapper.and(lambdaQueryWrapper -> lambdaQueryWrapper.like(User::getNickName, user.getUserName()).or().like(User::getUserName, user.getUserName()));
+            }
+            user.setUserName(null);
+        }
+        queryWrapper.ne(User::getStatus, User.Status.Deleted);
+        IPage<User> userPageResult = userService.page(userPage, queryWrapper);
+        List<UserDto> userDtoList = userPageResult.getRecords().stream()
+                .map(this::convert)
+                .collect(Collectors.toList());
+
+        // 创建分页对象，用于返回分页数据
+        Page<UserDto> userDtoPage = new Page<>(userPage.getCurrent(), userPage.getSize());
+        userDtoPage.setTotal(userPage.getTotal());
+        userDtoPage.setRecords(userDtoList);
+
+        return userDtoPage;
+    }
+
+    @Override
+    public UserDto queryById(Long userId) {
+        Assert.notNull(userId, "id must be non-null");
+        User user = userDomainService.queryById(userId);
+        if (user == null) {
+            return null;
+        }
+        UserDto userDto = convert(user);
+        if (userDto.getLang() == null) {
+            String lang = null;
+            if (RequestContext.get() != null && RequestContext.get().getClientCookieLang() != null) {
+                lang = RequestContext.get().getClientCookieLang();
+            }
+            if (lang == null) {
+                I18nLangDto aDefault = i18nLangApplicationService.getDefault(userDto.getTenantId());
+                if (aDefault != null) {
+                    lang = aDefault.getLang();
+                }
+            }
+            if (lang == null && RequestContext.get() != null && RequestContext.get().getClientLang() != null) {
+                lang = RequestContext.get().getClientLang();
+            }
+            User update = new User();
+            update.setId(userId);
+            update.setLang(lang);
+            userDomainService.update(update);
+            userDto.setLang(lang);
+        }
+        userDto.setLangMap(i18nApplicationService.querySystemLangMap(userDto.getTenantId(), I18nSideEnum.Backend.getSide(), userDto.getLang()));
+        return userDto;
+    }
+
+    @Override
+    public UserDto queryUserByPhoneOrEmailWithPassword(String phoneOrEmail, String password) {
+        User user;
+        if (phoneOrEmail.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
+            user = userDomainService.queryByEmail(phoneOrEmail);
+        } else {
+            user = userDomainService.queryByPhone(phoneOrEmail);
+            if (user == null) {
+                user = userDomainService.queryByUserName(phoneOrEmail);
+            }
+        }
+
+        if (user != null && (user.getPassword().equals(password) || user.getPassword().equals(MD5.StrongMD5Encode(password)))) {
+            return convert(user);
+        }
+        return null;
+    }
+
+    @Override
+    public UserDto queryUserByPhone(String phone) {
+        Assert.notNull(phone, "phone must be non-null");
+        return convert(userDomainService.queryByPhone(phone));
+    }
+
+    @Override
+    public UserDto queryUserByEmail(String email) {
+        Assert.notNull(email, "email must be non-null");
+        return convert(userDomainService.queryByEmail(email));
+    }
+
+    @Override
+    public UserDto queryUserByUserName(String userName) {
+        return convert(userDomainService.queryByUserName(userName));
+    }
+
+    @Override
+    public UserDto queryUserByUid(String uid) {
+        return convert(userDomainService.queryUserByUid(uid));
+    }
+
+    @Override
+    public List<UserDto> queryUserListByIds(List<Long> userIds) {
+        List<User> userList = userDomainService.queryUserListByIds(userIds);
+        return userList.stream().map(this::convert).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Long> queryUserIdList(Long lastId, Integer size) {
+        return userDomainService.queryUserIdList(lastId, size);
+    }
+
+    private UserDto convert(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(user, userDto);
+        userDto.setPassword(null);
+        return userDto;
+    }
+
+    @Override
+    public List<UserDto> queryUserListByUids(List<String> uids) {
+        List<User> userList = userDomainService.queryUserListByUids(uids);
+        return userList.stream()
+                .map(this::convert)
+                .toList();
+    }
+
+    @Override
+    public String getUserDynamicCode(Long userId) {
+        Object o = redisUtil.get("user:dynamicCode:" + userId);
+        if (o != null) {
+            redisUtil.expire("user:dynamicCode:" + userId, 5 * 60);// 有查询就续期5分钟
+            return o.toString();
+        }
+        String code = RandomUtil.randomNumbers(6);
+        redisUtil.set("user:dynamicCode:" + userId, code, 60 * 5);
+        return code;
+    }
+
+    @Override
+    public void logicDelete(Long userId) {
+        User update = new User();
+        update.setId(userId);
+        update.setUserName("--");
+        update.setEmail("--");
+        update.setPhone("--");
+        update.setStatus(User.Status.Deleted);
+        userDomainService.update(update);
+    }
+}

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.knowledge.core.infra.dao.mapper.KnowledgeDocumentMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeDocument">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="kbId" column="kb_id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="docUrl" column="doc_url" jdbcType="VARCHAR"/>
+        <result property="pubStatus" column="pub_status" jdbcType="OTHER"/>
+        <result property="hasQa" column="has_qa" jdbcType="TINYINT"/>
+        <result property="hasEmbedding" column="has_embedding" jdbcType="TINYINT"/>
+        <result property="segment" column="segment" jdbcType="OTHER"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="modifiedId" column="modified_id" jdbcType="BIGINT"/>
+        <result property="modifiedName" column="modified_name" jdbcType="VARCHAR"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <!--后端业务逻辑,公共查询逻辑1-->
+    <sql id="font_base_where">
+        <if test="queryMap.authSpaceIds != null and queryMap.authSpaceIds.size > 0">
+            and space_id in
+            <foreach collection="queryMap.authSpaceIds" item="item" index="index" separator="," open="("
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="queryMap.spaceId != null">
+            and space_id = #{queryMap.spaceId}
+        </if>
+        <if test="queryMap.kbId != null">
+            and kb_id = #{queryMap.kbId}
+        </if>
+        <if test="queryMap.name != null and queryMap.name != ''">
+            and name like concat('%',#{queryMap.name},'%')
+        </if>
+
+        <include refid="SysCommonSql.base_where"></include>
+        and yn = 1
+
+    </sql>
+
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_document
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+    </select>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_document
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and  orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by created desc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+
+    <select id="queryOneInfoByQaSegmentId" resultMap="BaseResultMap">
+        select
+        t1.*
+        from knowledge_document t1 
+        inner join knowledge_qa_segment t2 
+        on t1.id = t2.doc_id
+        where t2.id = #{qaSegmentId}
+    </select>
+
+    <select id="queryDocIdsByConfigId" resultType="java.lang.Long">
+        select t1.id
+        from knowledge_document t1
+        where t1.kb_id = #{kbId}
+        <if test="knowledgePubStatus != null">
+            and t1.pub_status = #{knowledgePubStatus}
+        </if>
+        and t1.yn = 1
+    </select>
+
+    <select id="queryTotalFileSize" resultType="java.lang.Long">
+        select sum(file_size)
+        from knowledge_document
+        where kb_id = #{kbId}
+        and yn = 1
+    </select>
+
+</mapper>

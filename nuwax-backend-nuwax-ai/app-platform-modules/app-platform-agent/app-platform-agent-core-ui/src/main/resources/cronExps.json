@@ -1,0 +1,510 @@
+[
+  {
+    "scope": "每时触发",
+    "cronExps": [
+      {
+        "time": "00",
+        "expression": "0 0 * * * ?"
+      },
+      {
+        "time": "01",
+        "expression": "0 1 * * * ?"
+      },
+      {
+        "time": "02",
+        "expression": "0 2 * * * ?"
+      },
+      {
+        "time": "03",
+        "expression": "0 3 * * * ?"
+      },
+      {
+        "time": "04",
+        "expression": "0 4 * * * ?"
+      },
+      {
+        "time": "05",
+        "expression": "0 5 * * * ?"
+      },
+      {
+        "time": "06",
+        "expression": "0 6 * * * ?"
+      },
+      {
+        "time": "07",
+        "expression": "0 7 * * * ?"
+      },
+      {
+        "time": "08",
+        "expression": "0 8 * * * ?"
+      },
+      {
+        "time": "09",
+        "expression": "0 9 * * * ?"
+      },
+      {
+        "time": "10",
+        "expression": "0 10 * * * ?"
+      },
+      {
+        "time": "11",
+        "expression": "0 11 * * * ?"
+      },
+      {
+        "time": "12",
+        "expression": "0 12 * * * ?"
+      },
+      {
+        "time": "13",
+        "expression": "0 13 * * * ?"
+      },
+      {
+        "time": "14",
+        "expression": "0 14 * * * ?"
+      },
+      {
+        "time": "15",
+        "expression": "0 15 * * * ?"
+      },
+      {
+        "time": "16",
+        "expression": "0 16 * * * ?"
+      },
+      {
+        "time": "17",
+        "expression": "0 17 * * * ?"
+      },
+      {
+        "time": "18",
+        "expression": "0 18 * * * ?"
+      },
+      {
+        "time": "19",
+        "expression": "0 19 * * * ?"
+      },
+      {
+        "time": "20",
+        "expression": "0 20 * * * ?"
+      },
+      {
+        "time": "21",
+        "expression": "0 21 * * * ?"
+      },
+      {
+        "time": "22",
+        "expression": "0 22 * * * ?"
+      },
+      {
+        "time": "23",
+        "expression": "0 23 * * * ?"
+      },
+      {
+        "time": "24",
+        "expression": "0 24 * * * ?"
+      },
+      {
+        "time": "25",
+        "expression": "0 25 * * * ?"
+      },
+      {
+        "time": "26",
+        "expression": "0 26 * * * ?"
+      },
+      {
+        "time": "27",
+        "expression": "0 27 * * * ?"
+      },
+      {
+        "time": "28",
+        "expression": "0 28 * * * ?"
+      },
+      {
+        "time": "29",
+        "expression": "0 29 * * * ?"
+      },
+      {
+        "time": "30",
+        "expression": "0 30 * * * ?"
+      },
+      {
+        "time": "31",
+        "expression": "0 31 * * * ?"
+      },
+      {
+        "time": "32",
+        "expression": "0 32 * * * ?"
+      },
+      {
+        "time": "33",
+        "expression": "0 33 * * * ?"
+      },
+      {
+        "time": "34",
+        "expression": "0 34 * * * ?"
+      },
+      {
+        "time": "35",
+        "expression": "0 35 * * * ?"
+      },
+      {
+        "time": "36",
+        "expression": "0 36 * * * ?"
+      },
+      {
+        "time": "37",
+        "expression": "0 37 * * * ?"
+      },
+      {
+        "time": "38",
+        "expression": "0 38 * * * ?"
+      },
+      {
+        "time": "39",
+        "expression": "0 39 * * * ?"
+      },
+      {
+        "time": "40",
+        "expression": "0 40 * * * ?"
+      },
+      {
+        "time": "41",
+        "expression": "0 41 * * * ?"
+      },
+      {
+        "time": "42",
+        "expression": "0 42 * * * ?"
+      },
+      {
+        "time": "43",
+        "expression": "0 43 * * * ?"
+      },
+      {
+        "time": "44",
+        "expression": "0 44 * * * ?"
+      },
+      {
+        "time": "45",
+        "expression": "0 45 * * * ?"
+      },
+      {
+        "time": "46",
+        "expression": "0 46 * * * ?"
+      },
+      {
+        "time": "47",
+        "expression": "0 47 * * * ?"
+      },
+      {
+        "time": "48",
+        "expression": "0 48 * * * ?"
+      },
+      {
+        "time": "49",
+        "expression": "0 49 * * * ?"
+      },
+      {
+        "time": "50",
+        "expression": "0 50 * * * ?"
+      },
+      {
+        "time": "51",
+        "expression": "0 51 * * * ?"
+      },
+      {
+        "time": "52",
+        "expression": "0 52 * * * ?"
+      },
+      {
+        "time": "53",
+        "expression": "0 53 * * * ?"
+      },
+      {
+        "time": "54",
+        "expression": "0 54 * * * ?"
+      },
+      {
+        "time": "55",
+        "expression": "0 55 * * * ?"
+      },
+      {
+        "time": "56",
+        "expression": "0 56 * * * ?"
+      },
+      {
+        "time": "57",
+        "expression": "0 57 * * * ?"
+      },
+      {
+        "time": "58",
+        "expression": "0 58 * * * ?"
+      },
+      {
+        "time": "59",
+        "expression": "0 59 * * * ?"
+      }
+    ]
+  },
+  {
+    "scope": "每日触发",
+    "cronExps": [
+      {
+        "time": "00:00",
+        "expression": "0 0 0 * * ?"
+      },
+      {
+        "time": "01:00",
+        "expression": "0 0 1 * * ?"
+      },
+      {
+        "time": "02:00",
+        "expression": "0 0 2 * * ?"
+      },
+      {
+        "time": "03:00",
+        "expression": "0 0 3 * * ?"
+      },
+      {
+        "time": "04:00",
+        "expression": "0 0 4 * * ?"
+      },
+      {
+        "time": "05:00",
+        "expression": "0 0 5 * * ?"
+      },
+      {
+        "time": "06:00",
+        "expression": "0 0 6 * * ?"
+      },
+      {
+        "time": "07:00",
+        "expression": "0 0 7 * * ?"
+      },
+      {
+        "time": "08:00",
+        "expression": "0 0 8 * * ?"
+      },
+      {
+        "time": "09:00",
+        "expression": "0 0 9 * * ?"
+      },
+      {
+        "time": "10:00",
+        "expression": "0 0 10 * * ?"
+      },
+      {
+        "time": "11:00",
+        "expression": "0 0 11 * * ?"
+      },
+      {
+        "time": "12:00",
+        "expression": "0 0 12 * * ?"
+      },
+      {
+        "time": "13:00",
+        "expression": "0 0 13 * * ?"
+      },
+      {
+        "time": "14:00",
+        "expression": "0 0 14 * * ?"
+      },
+      {
+        "time": "15:00",
+        "expression": "0 0 15 * * ?"
+      },
+      {
+        "time": "16:00",
+        "expression": "0 0 16 * * ?"
+      },
+      {
+        "time": "17:00",
+        "expression": "0 0 17 * * ?"
+      },
+      {
+        "time": "18:00",
+        "expression": "0 0 18 * * ?"
+      },
+      {
+        "time": "19:00",
+        "expression": "0 0 19 * * ?"
+      },
+      {
+        "time": "20:00",
+        "expression": "0 0 20 * * ?"
+      },
+      {
+        "time": "21:00",
+        "expression": "0 0 21 * * ?"
+      },
+      {
+        "time": "22:00",
+        "expression": "0 0 22 * * ?"
+      },
+      {
+        "time": "23:00",
+        "expression": "0 0 23 * * ?"
+      }
+    ]
+  },
+  {
+    "scope": "每周触发",
+    "cronExps": [
+      {
+        "time": "星期一",
+        "expression": "0 0 0 ? * MON"
+      },
+      {
+        "time": "星期二",
+        "expression": "0 0 0 ? * TUE"
+      },
+      {
+        "time": "星期三",
+        "expression": "0 0 0 ? * WED"
+      },
+      {
+        "time": "星期四",
+        "expression": "0 0 0 ? * THU"
+      },
+      {
+        "time": "星期五",
+        "expression": "0 0 0 ? * FRI"
+      },
+      {
+        "time": "星期六",
+        "expression": "0 0 0 ? * SAT"
+      },
+      {
+        "time": "星期日",
+        "expression": "0 0 0 ? * SUN"
+      }
+    ]
+  },
+  {
+    "scope": "每月触发",
+    "cronExps": [
+      {
+        "time": "1日",
+        "expression": "0 0 0 1 * ?"
+      },
+      {
+        "time": "2日",
+        "expression": "0 0 0 2 * ?"
+      },
+      {
+        "time": "3日",
+        "expression": "0 0 0 3 * ?"
+      },
+      {
+        "time": "4日",
+        "expression": "0 0 0 4 * ?"
+      },
+      {
+        "time": "5日",
+        "expression": "0 0 0 5 * ?"
+      },
+      {
+        "time": "6日",
+        "expression": "0 0 0 6 * ?"
+      },
+      {
+        "time": "7日",
+        "expression": "0 0 0 7 * ?"
+      },
+      {
+        "time": "8日",
+        "expression": "0 0 0 8 * ?"
+      },
+      {
+        "time": "9日",
+        "expression": "0 0 0 9 * ?"
+      },
+      {
+        "time": "10日",
+        "expression": "0 0 0 10 * ?"
+      },
+      {
+        "time": "11日",
+        "expression": "0 0 0 11 * ?"
+      },
+      {
+        "time": "12日",
+        "expression": "0 0 0 12 * ?"
+      },
+      {
+        "time": "13日",
+        "expression": "0 0 0 13 * ?"
+      },
+      {
+        "time": "14日",
+        "expression": "0 0 0 14 * ?"
+      },
+      {
+        "time": "15日",
+        "expression": "0 0 0 15 * ?"
+      },
+      {
+        "time": "16日",
+        "expression": "0 0 0 16 * ?"
+      },
+      {
+        "time": "17日",
+        "expression": "0 0 0 17 * ?"
+      },
+      {
+        "time": "18日",
+        "expression": "0 0 0 18 * ?"
+      },
+      {
+        "time": "19日",
+        "expression": "0 0 0 19 * ?"
+      },
+      {
+        "time": "20日",
+        "expression": "0 0 0 20 * ?"
+      },
+      {
+        "time": "21日",
+        "expression": "0 0 0 21 * ?"
+      },
+      {
+        "time": "22日",
+        "expression": "0 0 0 22 * ?"
+      },
+      {
+        "time": "23日",
+        "expression": "0 0 0 23 * ?"
+      },
+      {
+        "time": "24日",
+        "expression": "0 0 0 24 * ?"
+      },
+      {
+        "time": "25日",
+        "expression": "0 0 0 25 * ?"
+      },
+      {
+        "time": "26日",
+        "expression": "0 0 0 26 * ?"
+      },
+      {
+        "time": "27日",
+        "expression": "0 0 0 27 * ?"
+      },
+      {
+        "time": "28日",
+        "expression": "0 0 0 28 * ?"
+      },
+      {
+        "time": "29日",
+        "expression": "0 0 0 29 * ?"
+      },
+      {
+        "time": "30日",
+        "expression": "0 0 0 30 * ?"
+      },
+      {
+        "time": "31日",
+        "expression": "0 0 0 31 * ?"
+      }
+    ]
+  }
+]

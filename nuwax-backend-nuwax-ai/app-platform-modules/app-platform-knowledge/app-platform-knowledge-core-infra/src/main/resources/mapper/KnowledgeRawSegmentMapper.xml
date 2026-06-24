@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.knowledge.core.infra.dao.mapper.KnowledgeRawSegmentMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeRawSegment">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="docId" column="doc_id" jdbcType="BIGINT"/>
+        <result property="rawTxt" column="raw_txt" jdbcType="VARCHAR"/>
+        <result property="kbId" column="kb_id" jdbcType="BIGINT"/>
+        <result property="sortIndex" column="sort_index" jdbcType="INTEGER"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="modifiedId" column="modified_id" jdbcType="BIGINT"/>
+        <result property="modifiedName" column="modified_name" jdbcType="VARCHAR"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <!--后端业务逻辑,公共查询逻辑1-->
+    <sql id="font_base_where">
+        <if test="queryMap.authSpaceIds != null and queryMap.authSpaceIds.size > 0">
+            and space_id in
+            <foreach collection="queryMap.authSpaceIds" item="item" index="index" separator="," open="("
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="queryMap.spaceId != null">
+            and space_id = #{queryMap.spaceId}
+        </if>
+        <if test="queryMap.kbId != null">
+            and kb_id = #{queryMap.kbId}
+        </if>
+
+        <if test="queryMap.docId != null">
+            and doc_id = #{queryMap.docId}
+        </if>
+
+        <include refid="SysCommonSql.base_where"></include>
+        and yn = 1
+
+    </sql>
+
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_raw_segment
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+    </select>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_raw_segment
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and  orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by sort_index asc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+    <select id="queryListForPendingQa" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_raw_segment
+        where qa_status = -1
+        and yn = 1
+        and created > DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        limit #{startIndex}, #{endIndex}
+        order by id desc
+    </select>
+
+    <!-- 全文检索相关查询 -->
+    
+    <select id="queryByKbIdWithPage" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+        and yn = 1
+        order by id asc
+        limit #{startIndex}, #{endIndex}
+    </select>
+
+    <select id="queryAllSegmentIdsByKbId" resultType="java.lang.Long">
+        select id
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+        and yn = 1
+        order by id asc
+    </select>
+
+    <select id="countByKbId" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+        and yn = 1
+    </select>
+
+    <!-- 查询未同步的分段列表（分页） -->
+    <select id="queryUnsyncedSegments" resultMap="BaseResultMap">
+        select *
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+          and yn = 1
+          and (fulltext_sync_status is null or fulltext_sync_status = 0)
+        order by id asc
+        limit #{offset}, #{limit}
+    </select>
+
+    <!-- 统计未同步的分段数量 -->
+    <select id="countUnsyncedByKbId" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+          and yn = 1
+          and (fulltext_sync_status is null or fulltext_sync_status = 0)
+    </select>
+
+    <!-- 批量更新分段同步状态 -->
+    <update id="batchUpdateSyncStatus">
+        update knowledge_raw_segment
+        set fulltext_sync_status = #{status},
+            fulltext_sync_time = now(),
+            modified = now()
+        where id in
+        <foreach collection="segmentIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 查询知识库已同步的分段数量 -->
+    <select id="countSyncedByKbId" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_raw_segment
+        where kb_id = #{kbId}
+          and yn = 1
+          and fulltext_sync_status = 1
+    </select>
+
+</mapper>

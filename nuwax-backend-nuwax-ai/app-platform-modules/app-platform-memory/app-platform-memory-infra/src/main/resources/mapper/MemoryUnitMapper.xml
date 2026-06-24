@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.memory.infra.dao.mapper.MemoryUnitMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.memory.infra.dao.entity.MemoryUnit">
+        <id property="id" column="id"/>
+        <result property="tenantId" column="_tenant_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="agentId" column="agent_id"/>
+        <result property="category" column="category"/>
+        <result property="subCategory" column="sub_category"/>
+        <result property="contentJson" column="content_json"/>
+        <result property="isSensitive" column="is_sensitive"/>
+        <result property="status" column="status"/>
+        <result property="created" column="created"/>
+        <result property="modified" column="modified"/>
+    </resultMap>
+
+    <!-- 查询条件 -->
+    <sql id="base_where">
+        <if test="queryMap.tenantId != null">
+            and _tenant_id = #{queryMap.tenantId}
+        </if>
+        <if test="queryMap.userId != null">
+            and user_id = #{queryMap.userId}
+        </if>
+        <if test="queryMap.agentId != null">
+            and agent_id = #{queryMap.agentId}
+        </if>
+        <if test="queryMap.category != null and queryMap.category != ''">
+            and category = #{queryMap.category}
+        </if>
+        <if test="queryMap.subCategory != null and queryMap.subCategory != ''">
+            and sub_category = #{queryMap.subCategory}
+        </if>
+        <if test="queryMap.isSensitive != null">
+            and is_sensitive = #{queryMap.isSensitive}
+        </if>
+        <if test="queryMap.status != null and queryMap.status != ''">
+            and status = #{queryMap.status}
+        </if>
+        <if test="queryMap.keyword != null and queryMap.keyword != ''">
+            and (category like concat('%',#{queryMap.keyword},'%')
+            or sub_category like concat('%',#{queryMap.keyword},'%')
+            or content_json like concat('%',#{queryMap.keyword},'%'))
+        </if>
+    </sql>
+
+    <!-- 总条数查询 -->
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from memory_unit
+        <where>
+            <include refid="base_where"></include>
+        </where>
+    </select>
+
+    <!-- 列表查询 -->
+    <select id="queryList" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        <where>
+            <include refid="base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by created desc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+    <!-- 根据用户ID和分类查询 -->
+    <select id="findByUserIdAndCategory" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        where user_id = #{userId}
+        <if test="agentId != null">
+            and agent_id = #{agentId}
+        </if>
+        and category = #{category}
+        and sub_category = #{subCategory}
+        and status = 'active'
+        order by created desc limit 50
+    </select>
+
+    <!-- 根据代理ID查询 -->
+    <select id="findByAgentId" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        where agent_id = #{agentId}
+          and status = 'active'
+        order by created desc
+    </select>
+
+    <!-- 根据分类和JSON字段值查询（精确匹配） -->
+    <select id="findByCategoryAndJsonKeyValue" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        where _tenant_id = #{tenantId}
+        and user_id = #{userId}
+        and category = #{category}
+        <if test="subCategory != null and subCategory != ''">
+            and sub_category = #{subCategory}
+        </if>
+        and JSON_CONTAINS(content_json, JSON_QUOTE(#{jsonValue}), '$.${jsonKey}')
+        and status = 'active'
+        order by created desc
+    </select>
+
+    <!-- 根据分类和JSON字段值查询（模糊匹配） -->
+    <select id="findByCategoryAndJsonKeyValueLike" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        where _tenant_id = #{tenantId}
+        and user_id = #{userId}
+        and category = #{category}
+        <if test="subCategory != null and subCategory != ''">
+            and sub_category = #{subCategory}
+        </if>
+        and JSON_EXTRACT(content_json, '$.${jsonKey}') LIKE CONCAT('%', #{jsonValue}, '%')
+        and status = 'active'
+        order by created desc
+    </select>
+
+    <!-- 根据分类和JSON多个字段值查询 -->
+    <select id="findByCategoryAndJsonKeyValues" resultMap="BaseResultMap">
+        select *
+        from memory_unit
+        where _tenant_id = #{tenantId}
+        and user_id = #{userId}
+        and category = #{category}
+        <if test="subCategory != null and subCategory != ''">
+            and sub_category = #{subCategory}
+        </if>
+        <if test="jsonKeyValues != null and jsonKeyValues.size > 0">
+            and
+            <trim prefix="" prefixOverrides="and">
+                <foreach collection="jsonKeyValues" item="value" index="key" separator=" and ">
+                    JSON_CONTAINS(content_json, JSON_QUOTE(#{value}), '$.keyValues.${key}')
+                </foreach>
+            </trim>
+        </if>
+        and status = 'active'
+        order by created desc
+    </select>
+
+    <!-- 根据用户ID、代理ID和标签查询记忆单元 -->
+    <select id="selectWithJoinTags" resultMap="BaseResultMap">
+        select distinct mu.*
+        from memory_unit mu
+        inner join memory_unit_tag mut on mu.id = mut.memory_id
+        <where>
+            <if test="userId != null">
+                and mu.user_id = #{userId}
+            </if>
+            <if test="agentId != null">
+                and mu.agent_id = #{agentId}
+            </if>
+            <if test="tags != null and tags.size > 0">
+                and mut.tag_name in
+                <foreach collection="tags" item="tag" open="(" separator="," close=")">
+                    #{tag}
+                </foreach>
+            </if>
+            <if test="startTime != null">
+                and mu.created &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                and mu.created &lt;= #{endTime}
+            </if>
+            and mu.status = 'active'
+        </where>
+        order by mu.created desc
+        <if test="startIndex != null and pageSize != null">
+            limit #{startIndex}, #{pageSize}
+        </if>
+    </select>
+
+</mapper>

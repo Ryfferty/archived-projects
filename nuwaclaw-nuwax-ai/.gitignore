@@ -1,0 +1,77 @@
+.idea/
+tmp/
+logs/
+
+# MSVC Windows builds generate these, which store debugging information
+*.pdb
+
+book
+.DS_Store
+.pi/
+.vscode
+
+# Node.js dependencies (root husky/lint-staged)
+node_modules/
+.cache/sidecars/
+.cache/npm-tarballs/
+
+# Electron/前端构建产物
+dist/
+
+# Monaco 静态资源：构建时 prepare:monaco 生成，不入库
+crates/agent-electron-client/public/monaco/
+
+# Electron 打包输出（dmg/zip/exe/AppImage 等）
+release/
+
+# Bundled uv: 构建时 prepare-uv 生成，或从 GitHub Release 下载缓存
+crates/agent-electron-client/resources/uv/
+
+# Bundled Node.js: 构建时 prepare-node 下载
+crates/agent-electron-client/resources/node/
+
+# Bundled Git: 构建时 prepare-git 下载
+crates/agent-electron-client/resources/git/
+
+# Bundled lanproxy: 构建时 prepare-lanproxy 复制当前平台二进制
+crates/agent-electron-client/resources/lanproxy/bin/
+
+# Bundled MCP proxy: 构建时 prepare-mcp-proxy 从源码 build 并集成
+crates/agent-electron-client/resources/nuwax-mcp-stdio-proxy/
+
+# Bundled GUI Agent Server: 构建时 prepare-gui-server 从源码 build 并集成
+crates/agent-electron-client/resources/agent-gui-server/
+
+# Bundled nuwaxcode: 构建时从 GitHub Release 下载，不入库
+crates/agent-electron-client/resources/nuwaxcode/
+
+# Bundled windows-mcp: 构建时 prepare:windows-mcp 生成，不入库
+crates/agent-electron-client/resources/windows-mcp/
+
+# Bundled nuwax-file-server: 构建时 prepare:nuwax-file-server 从 GitHub 克隆源码 build 并集成
+crates/agent-electron-client/resources/nuwax-file-server/
+
+# Bundled claude-code-acp-ts: 构建时 prepare:claude-code-acp-ts 从 GitHub 克隆源码 build 并集成
+crates/agent-electron-client/resources/claude-code-acp-ts/
+
+# 源码克隆目录（prepare:nuwax-file-server / prepare:claude-code-acp-ts 使用）
+crates/agent-electron-client/sources/
+
+# Windows 专用 sandbox helper：build:sandbox-helper 生成，不入库
+crates/agent-electron-client/resources/sandbox-helper/*.exe
+
+# Prepare 脚本的临时下载缓存（不入库）
+crates/agent-electron-client/scripts/resources/
+
+# Vitest coverage reports
+crates/agent-electron-client/coverage/
+crates/nuwax-mcp-stdio-proxy/coverage/
+
+# Vite build artifact (generated at Electron client root)
+crates/agent-electron-client/index.html
+
+# Bundled gateway: 构建时 prepare-gateway 生成，不入库
+crates/agent-electron-client/resources/gateway/
+
+.kilo/
+

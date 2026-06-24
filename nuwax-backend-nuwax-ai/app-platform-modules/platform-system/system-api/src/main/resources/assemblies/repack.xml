@@ -1,0 +1,32 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>repack</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <!--
+            重新打包需要包含的jar包,这个过程会解压所有的jar包并按照jar的规则重新组合成一个jar包
+            这里需要包含当前这个工程 ，格式是{groupId}:{artifactId}
+            -->
+            <includes>
+                <!-- 包含项目自己 -->
+                <include>com.xspaceagi:system-api</include>
+                <include>com.xspaceagi:system-application</include>
+                <include>com.xspaceagi:system-domain</include>
+                <include>com.xspaceagi:system-infra</include>
+                <include>com.xspaceagi:system-spec</include>
+            </includes>
+            <!-- 打包结果目录：/ 表示target/ -->
+            <outputDirectory>/</outputDirectory>
+            <!-- 是否解压依赖 -->
+            <unpack>true</unpack>
+            <!-- 打包的scope -->
+            <!--      <scope>system</scope>-->
+        </dependencySet>
+    </dependencySets>
+</assembly>

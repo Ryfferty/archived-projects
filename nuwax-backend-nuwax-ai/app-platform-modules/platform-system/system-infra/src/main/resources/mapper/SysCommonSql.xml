@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SysCommonSql">
+
+    <!--后端业务逻辑,公共查询逻辑1-->
+    <sql id="base_where">
+
+        <if test="queryMap.created != null and queryMap.created.size > 1">
+            and created between #{queryMap.created[0]} and #{queryMap.created[1]}
+        </if>
+        <if test="queryMap.modified != null and queryMap.modified.size > 1">
+            and modified between #{queryMap.modified[0]} and #{queryMap.modified[1]}
+        </if>
+
+    </sql>
+
+
+
+
+</mapper>
+

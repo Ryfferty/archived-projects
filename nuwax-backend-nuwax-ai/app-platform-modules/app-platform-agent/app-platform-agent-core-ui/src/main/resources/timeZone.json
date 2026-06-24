@@ -1,0 +1,1336 @@
+[
+  {
+    "utc": "UTC-12:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Kwajalein",
+        "name": "马绍尔群岛时间"
+      },
+      {
+        "timeZone": "Pacific/Majuro",
+        "name": "马绍尔群岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-11:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Samoa",
+        "name": "萨摩亚时间"
+      },
+      {
+        "timeZone": "Pacific/Niue",
+        "name": "纽埃时间"
+      },
+      {
+        "timeZone": "Pacific/Midway",
+        "name": "中途岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-10:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Honolulu",
+        "name": "夏威夷时间"
+      },
+      {
+        "timeZone": "Pacific/Tahiti",
+        "name": "塔希提时间"
+      },
+      {
+        "timeZone": "Pacific/Rarotonga",
+        "name": "库克群岛时间"
+      },
+      {
+        "timeZone": "America/Honolulu",
+        "name": "夏威夷时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-09:30",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Marquesas",
+        "name": "马克萨斯群岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-09:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Anchorage",
+        "name": "阿拉斯加时间"
+      },
+      {
+        "timeZone": "America/Juneau",
+        "name": "阿拉斯加时间"
+      },
+      {
+        "timeZone": "America/Nome",
+        "name": "阿拉斯加时间"
+      },
+      {
+        "timeZone": "America/Sitka",
+        "name": "阿拉斯加时间"
+      },
+      {
+        "timeZone": "America/Yakutat",
+        "name": "阿拉斯加时间"
+      },
+      {
+        "timeZone": "Pacific/Gambier",
+        "name": "甘比尔群岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-08:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Los_Angeles",
+        "name": "太平洋时间"
+      },
+      {
+        "timeZone": "America/Tijuana",
+        "name": "太平洋时间"
+      },
+      {
+        "timeZone": "America/Vancouver",
+        "name": "太平洋时间"
+      },
+      {
+        "timeZone": "America/Whitehorse",
+        "name": "太平洋时间"
+      },
+      {
+        "timeZone": "America/Dawson",
+        "name": "太平洋时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-07:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Denver",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Phoenix",
+        "name": "亚利桑那时间"
+      },
+      {
+        "timeZone": "America/Chihuahua",
+        "name": "墨西哥山地时间"
+      },
+      {
+        "timeZone": "America/Mazatlan",
+        "name": "墨西哥太平洋时间"
+      },
+      {
+        "timeZone": "America/Edmonton",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Hermosillo",
+        "name": "墨西哥太平洋时间"
+      },
+      {
+        "timeZone": "America/Costa_Rica",
+        "name": "哥斯达黎加时间"
+      },
+      {
+        "timeZone": "America/Boise",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Inuvik",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Cambridge_Bay",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Yellowknife",
+        "name": "山地时间"
+      },
+      {
+        "timeZone": "America/Ojinaga",
+        "name": "墨西哥山地时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-06:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Chicago",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Regina",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Winnipeg",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/El_Salvador",
+        "name": "萨尔瓦多时间"
+      },
+      {
+        "timeZone": "America/Guatemala",
+        "name": "危地马拉时间"
+      },
+      {
+        "timeZone": "America/Managua",
+        "name": "尼加拉瓜时间"
+      },
+      {
+        "timeZone": "America/Tegucigalpa",
+        "name": "洪都拉斯时间"
+      },
+      {
+        "timeZone": "America/Belize",
+        "name": "伯利兹时间"
+      },
+      {
+        "timeZone": "America/Mexico_City",
+        "name": "墨西哥中部时间"
+      },
+      {
+        "timeZone": "America/Merida",
+        "name": "墨西哥中部时间"
+      },
+      {
+        "timeZone": "America/Monterrey",
+        "name": "墨西哥中部时间"
+      },
+      {
+        "timeZone": "America/Matamoros",
+        "name": "墨西哥中部时间"
+      },
+      {
+        "timeZone": "America/North_Dakota/New_Salem",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/North_Dakota/Beulah",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/North_Dakota/Center",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Rainy_River",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Rankin_Inlet",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Resolute",
+        "name": "中部时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-05:00",
+    "timeZones": [
+      {
+        "timeZone": "America/New_York",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Port-au-Prince",
+        "name": "海地时间"
+      },
+      {
+        "timeZone": "America/Havana",
+        "name": "古巴时间"
+      },
+      {
+        "timeZone": "America/Indiana/Indianapolis",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Knox",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Marengo",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Petersburg",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Tell_City",
+        "name": "中部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Vevay",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Vincennes",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indiana/Winamac",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Indianapolis",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Iqaluit",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Jamaica",
+        "name": "牙买加时间"
+      },
+      {
+        "timeZone": "America/Kentucky/Louisville",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Kentucky/Monticello",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Louisville",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Montreal",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Nassau",
+        "name": "巴哈马时间"
+      },
+      {
+        "timeZone": "America/Port_of_Spain",
+        "name": "特立尼达和多巴哥时间"
+      },
+      {
+        "timeZone": "America/Panama",
+        "name": "巴拿马时间"
+      },
+      {
+        "timeZone": "America/Thunder_Bay",
+        "name": "东部时间"
+      },
+      {
+        "timeZone": "America/Toronto",
+        "name": "东部时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-04:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Caracas",
+        "name": "委内瑞拉时间"
+      },
+      {
+        "timeZone": "America/La_Paz",
+        "name": "玻利维亚时间"
+      },
+      {
+        "timeZone": "America/Santiago",
+        "name": "智利时间"
+      },
+      {
+        "timeZone": "America/Asuncion",
+        "name": "巴拉圭时间"
+      },
+      {
+        "timeZone": "America/Guyana",
+        "name": "圭亚那时间"
+      },
+      {
+        "timeZone": "America/Goose_Bay",
+        "name": "大西洋时间"
+      },
+      {
+        "timeZone": "America/Halifax",
+        "name": "大西洋时间"
+      },
+      {
+        "timeZone": "America/Moncton",
+        "name": "大西洋时间"
+      },
+      {
+        "timeZone": "America/Thule",
+        "name": "大西洋时间"
+      },
+      {
+        "timeZone": "America/St_Johns",
+        "name": "纽芬兰时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-03:30",
+    "timeZones": [
+      {
+        "timeZone": "America/St_Johns",
+        "name": "纽芬兰时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-03:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Argentina/Buenos_Aires",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Buenos_Aires",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Cordoba",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/La_Rioja",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Tucuman",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Catamarca",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Rio_Gallegos",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Salta",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/San_Juan",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/San_Luis",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Mendoza",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Argentina/Jujuy",
+        "name": "阿根廷时间"
+      },
+      {
+        "timeZone": "America/Bahia",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Belem",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Fortaleza",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Maceio",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Recife",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Sao_Paulo",
+        "name": "巴西时间"
+      },
+      {
+        "timeZone": "America/Paramaribo",
+        "name": "苏里南时间"
+      },
+      {
+        "timeZone": "America/Asuncion",
+        "name": "巴拉圭时间"
+      },
+      {
+        "timeZone": "America/Montevideo",
+        "name": "乌拉圭时间"
+      },
+      {
+        "timeZone": "America/Santiago",
+        "name": "智利时间"
+      },
+      {
+        "timeZone": "America/Noronha",
+        "name": "费尔南多·德·诺罗尼亚时间"
+      },
+      {
+        "timeZone": "America/Godthab",
+        "name": "格陵兰时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-02:00",
+    "timeZones": [
+      {
+        "timeZone": "America/Noronha",
+        "name": "费尔南多·德·诺罗尼亚时间"
+      },
+      {
+        "timeZone": "Atlantic/South_Georgia",
+        "name": "南乔治亚岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC-01:00",
+    "timeZones": [
+      {
+        "timeZone": "Atlantic/Azores",
+        "name": "亚速尔时间"
+      },
+      {
+        "timeZone": "Atlantic/Cape_Verde",
+        "name": "佛得角时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+00:00",
+    "timeZones": [
+      {
+        "timeZone": "Europe/London",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Europe/Dublin",
+        "name": "爱尔兰时间"
+      },
+      {
+        "timeZone": "Europe/Lisbon",
+        "name": "葡萄牙时间"
+      },
+      {
+        "timeZone": "Europe/London",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Abidjan",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Accra",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Bamako",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Banjul",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Bissau",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Conakry",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Dakar",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Freetown",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Lome",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Monrovia",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Nouakchott",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Ouagadougou",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Africa/Sao_Tome",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Atlantic/Reykjavik",
+        "name": "格林尼治标准时间"
+      },
+      {
+        "timeZone": "Atlantic/St_Helena",
+        "name": "格林尼治标准时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+01:00",
+    "timeZones": [
+      {
+        "timeZone": "Europe/Paris",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Brussels",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Berlin",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Rome",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Madrid",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Amsterdam",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Budapest",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Warsaw",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Prague",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Vienna",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Zurich",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Copenhagen",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Ljubljana",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Malta",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Tirane",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Bratislava",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Oslo",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Stockholm",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Luxembourg",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Belgrade",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Zagreb",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Sarajevo",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Podgorica",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Skopje",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Tirane",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Nicosia",
+        "name": "中欧时间"
+      },
+      {
+        "timeZone": "Europe/Athens",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Bucharest",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Africa/Casablanca",
+        "name": "摩洛哥时间"
+      },
+      {
+        "timeZone": "Africa/Algiers",
+        "name": "阿尔及利亚时间"
+      },
+      {
+        "timeZone": "Africa/Tunis",
+        "name": "突尼斯时间"
+      },
+      {
+        "timeZone": "Africa/Tripoli",
+        "name": "利比亚时间"
+      },
+      {
+        "timeZone": "Africa/Windhoek",
+        "name": "纳米比亚时间"
+      },
+      {
+        "timeZone": "Africa/Luanda",
+        "name": "安哥拉时间"
+      },
+      {
+        "timeZone": "Africa/Brazzaville",
+        "name": "刚果时间"
+      },
+      {
+        "timeZone": "Africa/Kinshasa",
+        "name": "刚果时间"
+      },
+      {
+        "timeZone": "Africa/Lagos",
+        "name": "西非时间"
+      },
+      {
+        "timeZone": "Africa/Nairobi",
+        "name": "东非时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+02:00",
+    "timeZones": [
+      {
+        "timeZone": "Europe/Athens",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Bucharest",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Helsinki",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Kiev",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Riga",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Sofia",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Tallinn",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Vilnius",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Africa/Cairo",
+        "name": "埃及时间"
+      },
+      {
+        "timeZone": "Africa/Johannesburg",
+        "name": "南非标准时间"
+      },
+      {
+        "timeZone": "Africa/Maputo",
+        "name": "莫桑比克时间"
+      },
+      {
+        "timeZone": "Africa/Gaborone",
+        "name": "博茨瓦纳时间"
+      },
+      {
+        "timeZone": "Africa/Maseru",
+        "name": "莱索托时间"
+      },
+      {
+        "timeZone": "Africa/Mbabane",
+        "name": "斯威士兰时间"
+      },
+      {
+        "timeZone": "Asia/Amman",
+        "name": "约旦时间"
+      },
+      {
+        "timeZone": "Asia/Beirut",
+        "name": "黎巴嫩时间"
+      },
+      {
+        "timeZone": "Asia/Damascus",
+        "name": "叙利亚时间"
+      },
+      {
+        "timeZone": "Asia/Jerusalem",
+        "name": "以色列时间"
+      },
+      {
+        "timeZone": "Asia/Nicosia",
+        "name": "塞浦路斯时间"
+      },
+      {
+        "timeZone": "Asia/Gaza",
+        "name": "加沙时间"
+      },
+      {
+        "timeZone": "Asia/Hebron",
+        "name": "希伯伦时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+03:00",
+    "timeZones": [
+      {
+        "timeZone": "Europe/Moscow",
+        "name": "莫斯科时间"
+      },
+      {
+        "timeZone": "Europe/Simferopol",
+        "name": "克里米亚时间"
+      },
+      {
+        "timeZone": "Europe/Kaliningrad",
+        "name": "加里宁格勒时间"
+      },
+      {
+        "timeZone": "Europe/Kiev",
+        "name": "东欧时间"
+      },
+      {
+        "timeZone": "Europe/Minsk",
+        "name": "白俄罗斯时间"
+      },
+      {
+        "timeZone": "Asia/Baghdad",
+        "name": "伊拉克时间"
+      },
+      {
+        "timeZone": "Asia/Riyadh",
+        "name": "沙特阿拉伯时间"
+      },
+      {
+        "timeZone": "Asia/Tehran",
+        "name": "伊朗时间"
+      },
+      {
+        "timeZone": "Africa/Nairobi",
+        "name": "东非时间"
+      },
+      {
+        "timeZone": "Africa/Addis_Ababa",
+        "name": "埃塞俄比亚时间"
+      },
+      {
+        "timeZone": "Africa/Asmara",
+        "name": "厄立特里亚时间"
+      },
+      {
+        "timeZone": "Africa/Dar_es_Salaam",
+        "name": "坦桑尼亚时间"
+      },
+      {
+        "timeZone": "Africa/Djibouti",
+        "name": "吉布提时间"
+      },
+      {
+        "timeZone": "Africa/Kampala",
+        "name": "乌干达时间"
+      },
+      {
+        "timeZone": "Africa/Mogadishu",
+        "name": "索马里时间"
+      },
+      {
+        "timeZone": "Africa/Juba",
+        "name": "南苏丹时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+03:30",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Tehran",
+        "name": "伊朗时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+04:00",
+    "timeZones": [
+      {
+        "timeZone": "Europe/Volgograd",
+        "name": "伏尔加格勒时间"
+      },
+      {
+        "timeZone": "Europe/Samara",
+        "name": "萨马拉时间"
+      },
+      {
+        "timeZone": "Asia/Dubai",
+        "name": "阿联酋时间"
+      },
+      {
+        "timeZone": "Asia/Muscat",
+        "name": "阿曼时间"
+      },
+      {
+        "timeZone": "Asia/Baku",
+        "name": "阿塞拜疆时间"
+      },
+      {
+        "timeZone": "Asia/Yerevan",
+        "name": "亚美尼亚时间"
+      },
+      {
+        "timeZone": "Asia/Tbilisi",
+        "name": "格鲁吉亚时间"
+      },
+      {
+        "timeZone": "Asia/Kabul",
+        "name": "阿富汗时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+04:30",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Kabul",
+        "name": "阿富汗时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+05:00",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Karachi",
+        "name": "巴基斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Tashkent",
+        "name": "乌兹别克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Yekaterinburg",
+        "name": "叶卡捷琳堡时间"
+      },
+      {
+        "timeZone": "Asia/Oral",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Aqtau",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Aqtobe",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Atyrau",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Oral",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Novosibirsk",
+        "name": "新西伯利亚时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+05:30",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Colombo",
+        "name": "斯里兰卡时间"
+      },
+      {
+        "timeZone": "Asia/Kolkata",
+        "name": "印度标准时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+05:45",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Kathmandu",
+        "name": "尼泊尔时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+06:00",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Dhaka",
+        "name": "孟加拉国时间"
+      },
+      {
+        "timeZone": "Asia/Almaty",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Bishkek",
+        "name": "吉尔吉斯斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Qyzylorda",
+        "name": "哈萨克斯坦时间"
+      },
+      {
+        "timeZone": "Asia/Urumqi",
+        "name": "中国新疆时间"
+      },
+      {
+        "timeZone": "Asia/Omsk",
+        "name": "鄂木斯克时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+06:30",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Yangon",
+        "name": "缅甸时间"
+      },
+      {
+        "timeZone": "Asia/Cocos",
+        "name": "科科斯群岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+07:00",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Bangkok",
+        "name": "泰国时间"
+      },
+      {
+        "timeZone": "Asia/Ho_Chi_Minh",
+        "name": "越南时间"
+      },
+      {
+        "timeZone": "Asia/Jakarta",
+        "name": "印度尼西亚时间"
+      },
+      {
+        "timeZone": "Asia/Phnom_Penh",
+        "name": "柬埔寨时间"
+      },
+      {
+        "timeZone": "Asia/Vientiane",
+        "name": "老挝时间"
+      },
+      {
+        "timeZone": "Asia/Krasnoyarsk",
+        "name": "克拉斯诺亚尔斯克时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+08:00",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Shanghai",
+        "name": "中国标准时间"
+      },
+      {
+        "timeZone": "Asia/Hong_Kong",
+        "name": "香港时间"
+      },
+      {
+        "timeZone": "Asia/Taipei",
+        "name": "台北时间"
+      },
+      {
+        "timeZone": "Asia/Singapore",
+        "name": "新加坡时间"
+      },
+      {
+        "timeZone": "Asia/Kuala_Lumpur",
+        "name": "马来西亚时间"
+      },
+      {
+        "timeZone": "Asia/Jakarta",
+        "name": "印度尼西亚时间"
+      },
+      {
+        "timeZone": "Asia/Manila",
+        "name": "菲律宾时间"
+      },
+      {
+        "timeZone": "Asia/Ulaanbaatar",
+        "name": "蒙古时间"
+      },
+      {
+        "timeZone": "Asia/Irkutsk",
+        "name": "伊尔库茨克时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+09:00",
+    "timeZones": [
+      {
+        "timeZone": "Asia/Tokyo",
+        "name": "日本标准时间"
+      },
+      {
+        "timeZone": "Asia/Seoul",
+        "name": "韩国标准时间"
+      },
+      {
+        "timeZone": "Asia/Yakutsk",
+        "name": "雅库茨克时间"
+      },
+      {
+        "timeZone": "Asia/Osaka",
+        "name": "日本标准时间"
+      },
+      {
+        "timeZone": "Asia/Tokyo",
+        "name": "日本标准时间"
+      },
+      {
+        "timeZone": "Asia/Sapporo",
+        "name": "日本标准时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+09:30",
+    "timeZones": [
+      {
+        "timeZone": "Australia/Darwin",
+        "name": "澳大利亚中部时间"
+      },
+      {
+        "timeZone": "Australia/Adelaide",
+        "name": "澳大利亚中部时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+10:00",
+    "timeZones": [
+      {
+        "timeZone": "Australia/Brisbane",
+        "name": "澳大利亚东部时间"
+      },
+      {
+        "timeZone": "Australia/Hobart",
+        "name": "澳大利亚东部时间"
+      },
+      {
+        "timeZone": "Australia/Melbourne",
+        "name": "澳大利亚东部时间"
+      },
+      {
+        "timeZone": "Australia/Sydney",
+        "name": "澳大利亚东部时间"
+      },
+      {
+        "timeZone": "Pacific/Guam",
+        "name": "关岛时间"
+      },
+      {
+        "timeZone": "Pacific/Port_Moresby",
+        "name": "巴布亚新几内亚时间"
+      },
+      {
+        "timeZone": "Asia/Vladivostok",
+        "name": "符拉迪沃斯托克时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+10:30",
+    "timeZones": [
+      {
+        "timeZone": "Australia/Lord_Howe",
+        "name": "豪勋爵岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+11:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Norfolk",
+        "name": "诺福克岛时间"
+      },
+      {
+        "timeZone": "Pacific/Bougainville",
+        "name": "布干维尔岛时间"
+      },
+      {
+        "timeZone": "Asia/Magadan",
+        "name": "马加丹时间"
+      },
+      {
+        "timeZone": "Asia/Sakhalin",
+        "name": "萨哈林时间"
+      },
+      {
+        "timeZone": "Asia/Srednekolymsk",
+        "name": "中科利马时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+11:30",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Norfolk",
+        "name": "诺福克岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+12:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Fiji",
+        "name": "斐济时间"
+      },
+      {
+        "timeZone": "Pacific/Kwajalein",
+        "name": "马绍尔群岛时间"
+      },
+      {
+        "timeZone": "Pacific/Majuro",
+        "name": "马绍尔群岛时间"
+      },
+      {
+        "timeZone": "Pacific/Wake",
+        "name": "威克岛时间"
+      },
+      {
+        "timeZone": "Pacific/Wallis",
+        "name": "瓦利斯和富图纳时间"
+      },
+      {
+        "timeZone": "Asia/Kamchatka",
+        "name": "堪察加时间"
+      },
+      {
+        "timeZone": "Asia/Anadyr",
+        "name": "阿纳德尔时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+12:45",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Chatham",
+        "name": "查塔姆群岛时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+13:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Auckland",
+        "name": "新西兰标准时间"
+      },
+      {
+        "timeZone": "Pacific/Tongatapu",
+        "name": "汤加时间"
+      },
+      {
+        "timeZone": "Pacific/Nukualofa",
+        "name": "汤加时间"
+      }
+    ]
+  },
+  {
+    "utc": "UTC+14:00",
+    "timeZones": [
+      {
+        "timeZone": "Pacific/Kiritimati",
+        "name": "基里巴斯时间"
+      }
+    ]
+  }
+]

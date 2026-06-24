@@ -1,0 +1,18 @@
+[
+  {
+    "name": "SKILL.md",
+    "contents": "---\nname: \ndescription: \nlicense: \n---\n\n# Processing Guide\n\n## Overview\n\n"
+  },
+  {
+    "name": "references/api-docs.md",
+    "contents": "# API Documentation\n\nAdd interface descriptions related to skills here."
+  },
+  {
+    "name": "scripts/process.py",
+    "contents": "#!/usr/bin/env python3\n# Helper script for this skill\n\nif __name__ == \"__main__\":\n    print(\"Process script placeholder\")\n"
+  },
+  {
+    "name": "assets/template.json",
+    "contents": "{\n  \"description\": \"Skill template\",\n  \"config\": {}\n}\n"
+  }
+]

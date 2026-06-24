@@ -1,0 +1,1 @@
+package com.xspaceagi.eco.market.domain.specification;

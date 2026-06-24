@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+    <springProperty name="LOG_LEVEL" scope="context" source="log.level"/>
+    <springProperty name="DEV_MODE" scope="context" source="spring.profiles.active"/>
+    <!-- 通过 logging.file.path 配置日志输出路径，默认输出到相对路径 logs/ -->
+    <springProperty name="logPath" scope="context" source="logging.file.path" defaultValue="logs"/>
+    <property name="outPattern"
+              value="[%-5p] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%X{tid}] [%X{prefix}] - %m%n"/>
+    <property name="maxHistory" value="7"/>
+    <property name="charSet" value="UTF-8"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${outPattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="APP_LOG_FILE"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${logPath}/app.log.%d{yyyy-MM-dd}
+            </FileNamePattern>
+            <maxHistory>${maxHistory}</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <Pattern>${outPattern}</Pattern>
+            <charset>${charSet}</charset>
+        </encoder>
+    </appender>
+
+    <!-- 如果是可以容忍重启时丢失的应用日志，可以使用异步日志输出，大幅提升日志性能 -->
+    <appender name="ASYNC_APP_LOG_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 建议不丢失日志，设置为0 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的长度，该值会影响性能，默认值为256 -->
+        <queueSize>512</queueSize>
+        <appender-ref ref="APP_LOG_FILE"/>
+    </appender>
+
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="org.apache.zookeeper" level="ERROR"/>
+    <logger name="com.baomidou" level="ERROR"/>
+    <logger name="org.mybatis.spring" level="ERROR"/>
+    <logger name="com.xspaceagi.system.infra.dao.mapper" level="ERROR"/>
+    <logger name="com.xspaceagi.agent.core.infra.dao.mapper" level="ERROR"/>
+    <logger name="io.lettuce.core" level="ERROR"/>
+    <logger name="org.redisson" level="ERROR"/>
+    <logger name="com.alibaba" level="ERROR"/>
+    <logger name="com.xspaceagi.system.domain.service.impl.ScheduleTaskDomainServiceImpl" level="ERROR"/>
+
+    <!-- 缺省应用日志输出 -->
+    <root level="${LOG_LEVEL}">
+        <if condition='"${DEV_MODE}".equals("dev")'>
+            <then>
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="ASYNC_APP_LOG_FILE"/>
+            </then>
+        </if>
+        <if condition='"${DEV_MODE}".equals("prod")'>
+            <then>
+                <appender-ref ref="ASYNC_APP_LOG_FILE"/>
+            </then>
+        </if>
+        <if condition='"${DEV_MODE}".equals("test")'>
+            <then>
+                <appender-ref ref="ASYNC_APP_LOG_FILE"/>
+            </then>
+        </if>
+    </root>
+</configuration>

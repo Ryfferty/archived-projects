@@ -1,0 +1,86 @@
+issuehunt:
+  name: IssueHunt
+  url: https://issuehunt.io
+  api_base: https://api.issuehunt.io
+  payment_method: PayPal
+  typical_bounty_range:
+    min: 20
+    max: 200
+    currency: USD
+  features:
+    - issue_bounty_specialist
+    - user_friendly_interface
+    - china_user_friendly
+  rate_limit:
+    requests_per_minute: 60
+    burst: 10
+
+github:
+  name: GitHub
+  url: https://github.com
+  api_base: https://api.github.com
+  search_labels:
+    - bounty
+    - "💰 Bounty"
+    - "💎 Bounty"
+    - 赏金
+    - "$$$"
+  search_command: "gh search issues 'label:bounty is:open'"
+  rate_limit:
+    requests_per_minute: 30
+    search_per_minute: 10
+  auth_methods:
+    - token
+    - oauth
+    - gh_cli
+
+algora:
+  name: Algora
+  url: https://algora.io
+  api_base: https://api.algora.io
+  payment_method: Stripe + Crypto
+  typical_bounty_range:
+    min: 50
+    max: 5000
+    currency: USD
+  features:
+    - crypto_payments
+    - large_bounties
+    - developer_focused
+  rate_limit:
+    requests_per_minute: 60
+    burst: 20
+
+gitcoin:
+  name: Gitcoin
+  url: https://gitcoin.co
+  api_base: https://gitcoin.co/api
+  payment_method: Crypto (ETH, DAI)
+  typical_bounty_range:
+    min: 100
+    max: 50000
+    currency: USD
+  features:
+    - crypto_native
+    - grants_program
+    - quadratic_funding
+  rate_limit:
+    requests_per_minute: 30
+    burst: 10
+
+bossdev:
+  name: boss.dev
+  url: https://boss.dev
+  api_base: https://api.boss.dev
+  payment_method: Bank Transfer
+  typical_bounty_range:
+    min: 100
+    max: 10000
+    currency: USD
+  features:
+    - enterprise_focused
+    - large_bounties
+    - direct_hiring_path
+  rate_limit:
+    requests_per_minute: 30
+    burst: 5

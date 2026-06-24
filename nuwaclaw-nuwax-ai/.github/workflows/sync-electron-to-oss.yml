@@ -1,0 +1,334 @@
+# 仅同步：将指定 tag 的 GitHub Release 资产同步到 MinIO S3（构建产物）和阿里云 OSS（latest.json）
+# 供手动 workflow_dispatch 触发。
+#
+# 所需 Secrets：GH_PAT（或 repo token）、MINIO_ACCESS_KEY_ID、MINIO_SECRET_ACCESS_KEY、OSS_ACCESS_KEY_ID、OSS_ACCESS_KEY_SECRET
+
+name: Sync Electron Release to MinIO S3 & OSS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to sync (e.g. electron-v0.9.0)"
+        required: true
+        type: string
+      channel:
+        description: "Update channel pointer to publish (stable|beta). beta will NOT overwrite latest/latest.json"
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - beta
+
+permissions:
+  contents: read
+
+jobs:
+  sync-to-minio:
+    name: Sync release to MinIO S3 & OSS
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      # MinIO S3 配置（存放构建产物和 yml 文件）
+      S3_ENDPOINT: "https://s3.nuwax.com:9443"
+      S3_REGION: "us-east-1"
+      S3_BUCKET: "nuwaclaw"
+      S3_CDN_BASE: "https://s3.nuwax.com:9443/nuwaclaw"
+      # 阿里云 OSS 配置（仅存放 latest.json）
+      OSS_ENDPOINT: "https://oss-rg-china-mainland.aliyuncs.com"
+      OSS_REGION: "rg-china-mainland"
+      OSS_BUCKET: "oss://nuwa-packages"
+      OSS_CDN_BASE: "https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com"
+      RELEASE_TAG: ${{ inputs.tag }}
+      RELEASE_CHANNEL: ${{ inputs.channel || 'stable' }}
+    steps:
+      - name: Ensure awscli v2 (for S3)
+        run: |
+          if aws --version 2>/dev/null; then
+            echo "AWS CLI already installed"
+          else
+            curl -fSL -o /tmp/awscliv2.zip \
+              "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+            unzip -q /tmp/awscliv2.zip -d /tmp
+            sudo /tmp/aws/install --bin-dir /usr/local/bin
+          fi
+          aws --version
+
+      - name: Install ossutil v2 (for latest.json)
+        run: |
+          curl -fSL -o /tmp/ossutil.zip \
+            "https://gosspublic.alicdn.com/ossutil/v2/2.2.0/ossutil-2.2.0-linux-amd64.zip"
+          unzip -q /tmp/ossutil.zip -d /tmp
+          sudo mv /tmp/ossutil-2.2.0-linux-amd64/ossutil /usr/local/bin/
+          ossutil version
+
+      - name: Configure AWS credentials for S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_ACCESS_KEY }}
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+          aws configure set default.region "$S3_REGION"
+          aws configure set default.s3.addressing_style path
+          aws configure set endpoint_url "$S3_ENDPOINT"
+
+      - name: Download all release assets
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          TAG="${RELEASE_TAG}"
+          mkdir -p /tmp/release-assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir /tmp/release-assets
+          echo "==> Downloaded assets:"
+          ls -lh /tmp/release-assets/
+
+      - name: Generate latest.json and platform yml from assets
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          TAG="${RELEASE_TAG}"
+          VERSION="${TAG#electron-v}"
+          CHANNEL="${RELEASE_CHANNEL}"
+          S3_URL_PREFIX="${S3_CDN_BASE}/nuwaclaw-electron/${TAG}"
+          if [ "$CHANNEL" = "beta" ]; then
+            S3_URL_PREFIX="${S3_CDN_BASE}/nuwaclaw-electron/beta-build/${TAG}"
+          fi
+          ASSETS_DIR="/tmp/release-assets"
+
+          # semver MVP guard: only allow numeric x.y.z
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version '${VERSION}'. MVP only supports numeric x.y.z"
+            exit 1
+          fi
+
+          if [ "$CHANNEL" != "stable" ] && [ "$CHANNEL" != "beta" ]; then
+            echo "::error::Invalid channel '${CHANNEL}', expected stable or beta"
+            exit 1
+          fi
+
+          rm -f "${ASSETS_DIR}"/*.yml
+
+          RELEASE_JSON=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body,createdAt 2>/dev/null || echo '{}')
+          NOTES=$(echo "$RELEASE_JSON" | jq -r '.body // "NuwaClaw 功能优化和问题修复。建议更新到最新版本以获得更好的体验。"' | head -c 500)
+          PUB_DATE=$(echo "$RELEASE_JSON" | jq -r '.createdAt // empty')
+          if [ -z "$PUB_DATE" ]; then
+            PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          fi
+
+          add_platform() {
+            local key="$1" file="$2"
+            local filepath="${ASSETS_DIR}/${file}"
+            if [ -f "$filepath" ]; then
+              local sig size
+              sig=$(sha512sum "$filepath" | awk '{print $1}' | xxd -r -p | base64 -w0)
+              if [ -z "$sig" ]; then
+                echo "  Skipped: ${key} -> ${file} (signature generation failed)"
+                return 0
+              fi
+              size=$(stat -c%s "$filepath" 2>/dev/null || stat -f%z "$filepath")
+              PLATFORMS=$(echo "$PLATFORMS" | jq \
+                --arg k "$key" \
+                --arg u "${S3_URL_PREFIX}/${file}" \
+                --arg s "$sig" \
+                --argjson sz "$size" \
+                '. + {($k): {"url": $u, "signature": $s, "size": $sz}}')
+              echo "  Added: ${key} -> ${file} (${size} bytes)"
+            fi
+          }
+
+          PLATFORMS="{}"
+          echo "==> Scanning release assets for platforms..."
+          add_platform "darwin-aarch64"     "NuwaClaw-${VERSION}-arm64.dmg"
+          add_platform "darwin-aarch64-zip" "NuwaClaw-${VERSION}-arm64-mac.zip"
+          add_platform "darwin-x86_64"      "NuwaClaw-${VERSION}.dmg"
+          add_platform "darwin-x86_64-zip"  "NuwaClaw-${VERSION}-mac.zip"
+          add_platform "windows-x86_64"      "NuwaClaw.Setup.${VERSION}.exe"
+          add_platform "windows-x86_64-nsis" "NuwaClaw.Setup.${VERSION}.exe"
+          add_platform "windows-x86_64-msi"  "NuwaClaw.${VERSION}.msi"
+          add_platform "linux-x86_64"          "NuwaClaw-${VERSION}.AppImage"
+          add_platform "linux-x86_64-appimage" "NuwaClaw-${VERSION}.AppImage"
+          add_platform "linux-x86_64-deb"      "NuwaClaw-${VERSION}-amd64.deb"
+          add_platform "linux-x86_64-rpm"      "NuwaClaw-${VERSION}-x86_64.rpm"
+          add_platform "linux-aarch64"          "NuwaClaw-${VERSION}-arm64.AppImage"
+          add_platform "linux-aarch64-appimage" "NuwaClaw-${VERSION}-arm64.AppImage"
+          add_platform "linux-aarch64-deb"      "NuwaClaw-${VERSION}-arm64.deb"
+          add_platform "linux-aarch64-rpm"      "NuwaClaw-${VERSION}-aarch64.rpm"
+
+          if [ "$(echo "$PLATFORMS" | jq 'length')" = "0" ]; then
+            echo "::warning::No exact filename matches, falling back to fuzzy scan"
+            for file in "${ASSETS_DIR}"/*; do
+              filename=$(basename "$file")
+              case "$filename" in
+                *.dmg|*.zip|*.exe|*.msi|*.AppImage|*.deb|*.rpm)
+                  key=""
+                  case "$filename" in
+                    *arm64*mac*|*arm64*.dmg)  key="darwin-aarch64" ;;
+                    *x64*mac*|*x64*.dmg)      key="darwin-x86_64" ;;
+                    *Setup*.exe|*setup*.exe)   key="windows-x86_64" ;;
+                    *.msi)                     key="windows-x86_64-msi" ;;
+                    *arm64*.AppImage)          key="linux-aarch64" ;;
+                    *amd64*.AppImage|*x64*.AppImage|*.AppImage) key="linux-x86_64" ;;
+                    *arm64*.deb)               key="linux-aarch64-deb" ;;
+                    *amd64*.deb|*x64*.deb)     key="linux-x86_64-deb" ;;
+                    *aarch64*.rpm)             key="linux-aarch64-rpm" ;;
+                    *x86_64*.rpm|*x64*.rpm)   key="linux-x86_64-rpm" ;;
+                  esac
+                  [ -n "$key" ] && add_platform "$key" "$filename"
+                  ;;
+              esac
+            done
+          fi
+
+          gen_yml() {
+            local channel="$1"
+            local keys="$2"
+            local first_key first_file
+            first_key=$(echo "$PLATFORMS" | jq -r --argjson keys "$keys" 'limit(1; $keys[] as $k | select(.[$k] != null) | $k)')
+            [ -z "$first_key" ] || [ "$first_key" = "null" ] && return 0
+            first_file=$(echo "$PLATFORMS" | jq -r --arg k "$first_key" '.[$k].url' | sed 's|.*/||')
+            {
+              echo "version: $VERSION"
+              echo "path: $first_file"
+              echo "sha512: $(echo "$PLATFORMS" | jq -r --arg k "$first_key" '.[$k].signature')"
+              echo "releaseDate: $PUB_DATE"
+              echo "files:"
+              echo "$PLATFORMS" | jq -r --argjson keys "$keys" '
+                [ $keys[] as $k | select(.[$k] != null) | .[$k] |
+                  "  - url: " + (.url | split("/") | last) + "\n    sha512: " + .signature + "\n    size: " + (.size | tostring)
+                ] | join("\n")
+              '
+            } > "${ASSETS_DIR}/${channel}.yml"
+            echo "  Generated ${channel}.yml (primary: $first_file)"
+          }
+          DARWIN_KEYS='["darwin-aarch64-zip","darwin-x86_64-zip","darwin-aarch64","darwin-x86_64"]'
+          LINUX_KEYS='["linux-x86_64-appimage","linux-aarch64-appimage","linux-x86_64","linux-aarch64","linux-x86_64-deb","linux-aarch64-deb","linux-x86_64-rpm","linux-aarch64-rpm"]'
+          LINUX_ARM64_KEYS='["linux-aarch64-appimage","linux-aarch64","linux-aarch64-deb","linux-aarch64-rpm"]'
+          LINUX_X64_KEYS='["linux-x86_64-appimage","linux-x86_64","linux-x86_64-deb","linux-x86_64-rpm"]'
+          WIN_KEYS='["windows-x86_64","windows-x86_64-nsis","windows-x86_64-msi"]'
+          gen_yml "latest-mac" "$DARWIN_KEYS"
+          gen_yml "latest-linux" "$LINUX_KEYS"
+          gen_yml "latest-linux-arm64" "$LINUX_ARM64_KEYS"
+          gen_yml "latest-linux-x64" "$LINUX_X64_KEYS"
+          gen_yml "latest" "$WIN_KEYS"
+          echo "==> Platform yml written to ${ASSETS_DIR}"
+
+          # 构建 yml 文件的完整 S3 URL
+          YML_URLS=$(jq -n \
+            --arg darwin "${S3_URL_PREFIX}/latest-mac.yml" \
+            --arg linux "${S3_URL_PREFIX}/latest-linux.yml" \
+            --arg win "${S3_URL_PREFIX}/latest.yml" \
+            '{darwin: $darwin, linux: $linux, win: $win}')
+
+          LATEST_JSON=$(jq -n \
+            --arg version "$VERSION" \
+            --arg notes "$NOTES" \
+            --arg pub_date "$PUB_DATE" \
+            --argjson platforms "$PLATFORMS" \
+            --argjson yml "$YML_URLS" \
+            '{version: $version, notes: $notes, pub_date: $pub_date, platforms: $platforms, yml: $yml}')
+          echo "$LATEST_JSON" > /tmp/latest.json
+          echo "==> Generated latest.json"
+          echo "$LATEST_JSON" | jq .
+
+      - name: Upload all assets to MinIO S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_ACCESS_KEY }}
+        run: |
+          TAG="${RELEASE_TAG}"
+          CHANNEL="${RELEASE_CHANNEL}"
+          if [ "$CHANNEL" = "beta" ]; then
+            S3_PREFIX="nuwaclaw-electron/beta-build/${TAG}"
+          else
+            S3_PREFIX="nuwaclaw-electron/${TAG}"
+          fi
+
+          for file in /tmp/release-assets/*; do
+            filename=$(basename "$file")
+            echo "Uploading to S3: ${filename}"
+            aws s3 cp "$file" "s3://${S3_BUCKET}/${S3_PREFIX}/${filename}" \
+              --endpoint-url "$S3_ENDPOINT"
+          done
+
+          # 同步 latest.json 到 S3（版本化路径 + 通道滚动指针）
+          echo "Uploading latest.json to S3..."
+          aws s3 cp /tmp/latest.json "s3://${S3_BUCKET}/${S3_PREFIX}/latest.json" \
+            --endpoint-url "$S3_ENDPOINT"
+          if [ "$CHANNEL" = "stable" ]; then
+            aws s3 cp /tmp/latest.json "s3://${S3_BUCKET}/nuwaclaw-electron/latest/latest.json" \
+              --endpoint-url "$S3_ENDPOINT"
+          else
+            aws s3 cp /tmp/latest.json "s3://${S3_BUCKET}/nuwaclaw-electron/beta/latest.json" \
+              --endpoint-url "$S3_ENDPOINT"
+          fi
+
+      - name: Verify S3 upload
+        run: |
+          TAG="${RELEASE_TAG}"
+          CHANNEL="${RELEASE_CHANNEL}"
+          if [ "$CHANNEL" = "beta" ]; then
+            VERIFY_URL="${S3_CDN_BASE}/nuwaclaw-electron/beta-build/${TAG}/latest-mac.yml"
+          else
+            VERIFY_URL="${S3_CDN_BASE}/nuwaclaw-electron/${TAG}/latest-mac.yml"
+          fi
+          HTTP_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "$VERIFY_URL")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "==> S3 upload verified: latest-mac.yml (HTTP ${HTTP_STATUS})"
+          else
+            echo "::error::S3 upload verification failed: latest-mac.yml (HTTP ${HTTP_STATUS})"
+            exit 1
+          fi
+
+      - name: Upload latest.json to Alibaba OSS
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+        run: |
+          TAG="${RELEASE_TAG}"
+          CHANNEL="${RELEASE_CHANNEL}"
+          echo "==> Publishing latest.json to OSS for channel: ${CHANNEL}"
+          if [ "$CHANNEL" = "beta" ]; then
+            VERSIONED_JSON_PATH="${OSS_BUCKET}/nuwaclaw-electron/beta-build/${TAG}/latest.json"
+          else
+            VERSIONED_JSON_PATH="${OSS_BUCKET}/nuwaclaw-electron/${TAG}/latest.json"
+          fi
+          ossutil cp --force /tmp/latest.json "${VERSIONED_JSON_PATH}" \
+            --endpoint "$OSS_ENDPOINT" \
+            --region "$OSS_REGION" \
+            --access-key-id "$OSS_ACCESS_KEY_ID" \
+            --access-key-secret "$OSS_ACCESS_KEY_SECRET"
+
+          if [ "$CHANNEL" = "stable" ]; then
+            ossutil cp --force /tmp/latest.json "${OSS_BUCKET}/nuwaclaw-electron/latest/latest.json" \
+              --endpoint "$OSS_ENDPOINT" \
+              --region "$OSS_REGION" \
+              --access-key-id "$OSS_ACCESS_KEY_ID" \
+              --access-key-secret "$OSS_ACCESS_KEY_SECRET"
+            echo "==> Uploaded latest.json to stable pointer: latest/latest.json"
+          else
+            ossutil cp --force /tmp/latest.json "${OSS_BUCKET}/nuwaclaw-electron/beta/latest.json" \
+              --endpoint "$OSS_ENDPOINT" \
+              --region "$OSS_REGION" \
+              --access-key-id "$OSS_ACCESS_KEY_ID" \
+              --access-key-secret "$OSS_ACCESS_KEY_SECRET"
+            echo "==> Uploaded latest.json to beta pointer: beta/latest.json (stable pointer untouched)"
+          fi
+
+      - name: Verify OSS upload
+        run: |
+          CHANNEL="${RELEASE_CHANNEL}"
+          if [ "$CHANNEL" = "stable" ]; then
+            VERIFY_URL="${OSS_CDN_BASE}/nuwaclaw-electron/latest/latest.json"
+          else
+            VERIFY_URL="${OSS_CDN_BASE}/nuwaclaw-electron/beta/latest.json"
+          fi
+          HTTP_STATUS=$(curl -sS -o /tmp/oss-latest.json -w "%{http_code}" "$VERIFY_URL")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "==> latest.json (${CHANNEL}): OK (HTTP ${HTTP_STATUS})"
+            cat /tmp/oss-latest.json | jq .
+          else
+            echo "::error::latest.json for channel '${CHANNEL}' not found on OSS (HTTP ${HTTP_STATUS})"
+            exit 1
+          fi

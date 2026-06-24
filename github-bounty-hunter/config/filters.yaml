@@ -1,0 +1,106 @@
+bounty:
+  min_amount: 20
+  currency: USD
+  preferred_min: 50
+  preferred_max: 500
+
+difficulty:
+  max_score: 10
+  preferred_range:
+    min: 3
+    max: 7
+  easy_keywords:
+    - fix typo
+    - typo
+    - spelling
+    - documentation
+    - update doc
+    - readme
+    - simple fix
+    - small fix
+    - minor
+    - trivial
+  hard_keywords:
+    - refactor
+    - rewrite
+    - architecture
+    - design system
+    - migration
+    - performance
+    - optimization
+    - scalability
+    - security
+    - authentication
+    - authorization
+    - encryption
+    - database migration
+    - api redesign
+
+competition:
+  max_claimants: 3
+  max_open_prs: 2
+  claimant_penalty_weight: 2.0
+  pr_penalty_weight: 1.5
+  claimed_by_me_bonus: 8.0
+
+timeliness:
+  max_age_days: 30
+  preferred_age_days: 14
+  score_tiers:
+    fresh_3d: 10
+    week_7d: 8
+    two_weeks_14d: 6
+    month_30d: 4
+    old: 2
+
+project_quality:
+  min_stars: 100
+  min_recent_commits: 5
+  star_score_factor: 0.01
+  commit_score_factor: 0.5
+  base_quality_score: 2.0
+  open_issue_penalty_threshold: 100
+  open_issue_penalty_rate: 0.01
+
+languages:
+  - python
+  - typescript
+  - javascript
+  - go
+  - rust
+  - java
+  - csharp
+  - ruby
+  - php
+  - cpp
+
+search:
+  per_page: 20
+  max_pages: 5
+  sort: updated
+  order: desc
+  timeout_seconds: 30
+
+evaluation:
+  weights:
+    difficulty: 0.25
+    amount: 0.25
+    competition: 0.15
+    timeliness: 0.15
+    project_quality: 0.20
+  thresholds:
+    highly_recommended: 7.5
+    recommended: 6.0
+    maybe: 4.5
+
+notification:
+  enabled: false
+  channels: []
+  email:
+    smtp_host: ""
+    smtp_port: 587
+    from_address: ""
+    to_addresses: []
+  webhook:
+    url: ""
+    method: POST

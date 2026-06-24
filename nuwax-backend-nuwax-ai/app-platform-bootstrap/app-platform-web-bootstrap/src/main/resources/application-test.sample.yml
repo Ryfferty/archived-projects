@@ -1,0 +1,232 @@
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  # 使用 dynamic-datasource-spring-boot-starter 配置
+  datasource:
+    # 动态SQL生成器配置
+    sql-generator:
+      # 指定使用的数据库类型：mysql 或 doris
+      type: mysql
+    dynamic:
+      # 设置默认的数据源或者数据源组, 默认值即为 master
+      primary: master
+      # 设置严格模式,默认 false. 严格模式下未匹配到数据源直接报错, 非严格模式下则使用默认数据源 primary 配置的数据源
+      strict: false
+      # p6spy 开关, 默认 false
+      p6spy: false
+      # seata 开关, 默认 false
+      seata: false
+      # 数据源配置信息
+      datasource:
+        # 主数据源 (MySQL)
+        master:
+          url: jdbc:mysql://${DB_HOST:localhost}:3306/${DB_NAME:agent_platform}?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowMultiQueries=true&socketTimeout=300000&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${DB_USERNAME:root}
+          password: ${DB_PASSWORD:your_mysql_password}
+          # 以下为 Druid 连接池配置 (如果使用)
+          druid:
+            initial-size: 5
+            min-idle: 5
+            max-active: 20
+            max-wait: 60000
+            time-between-eviction-runs-millis: 60000
+            min-evictable-idle-time-millis: 300000
+            validation-query: SELECT 1 FROM DUAL
+            test-while-idle: true
+            test-on-borrow: false
+            test-on-return: false
+            pool-prepared-statements: true
+            max-pool-prepared-statement-per-connection-size: 20
+            filters: stat # 启用 stat filter 用于监控
+        # Doris 数据源
+        doris:
+          url: jdbc:mysql://${DORIS_HOST:localhost}:3306/${DORIS_DB_NAME:agent_custom_table}?serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowMultiQueries=true&socketTimeout=300000&useSSL=false
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${DORIS_USERNAME:root}
+          password: ${DORIS_PASSWORD:your_doris_password}
+          # Doris 表配置
+          table:
+            replication-num: 1 # 副本数，生产环境通常为3，开发环境可以为1
+            bucket-num: 10 # 分桶数
+            duplicate-key: id # 重复键字段名，默认使用第一个字段
+            distributed-key: id # 分布键字段名，默认使用第一个字段
+          # 可选: 如果 Doris 也用 Druid，可以添加 druid 配置
+          druid:
+            initial-size: 2
+            min-idle: 2
+            max-active: 10
+            max-wait: 60000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:your_redis_password}
+      database: ${REDIS_DB:1}
+      lettuce:
+        pool:
+          max-idle: 16
+          max-active: 32
+          min-idle: 8
+
+  main:
+    allow-circular-references: true
+log:
+  level: DEBUG
+
+server:
+  port: 8081
+
+jwt:
+  secretKey: ${JWT_SECRET_KEY:your_jwt_secret_key_minimum_32_characters}
+
+file:
+  uploadFolder: ${FILE_UPLOAD_FOLDER:/tmp/uploads}
+  baseUrl: ${FILE_BASE_URL:https://your-file-domain.com/files/}
+
+# Storage configuration
+storage:
+  type: ${STORAGE_TYPE:local}  # Storage type: local, cos(Tencent Cloud), oss(Alibaba Cloud), s3(S3 protocol/MinIO)
+
+local:
+  upload:
+    folder: ${LOCAL_UPLOAD_FOLDER:/tmp/uploads}
+
+# Tencent Cloud COS configuration (takes effect when storage.type=cos)
+cos:
+  secret-id: ${COS_SECRET_ID:}
+  secret-key: ${COS_SECRET_KEY:}
+  region: ${COS_REGION:ap-chengdu}
+  bucket-name: ${COS_BUCKET_NAME:}
+  endpoint: ${COS_ENDPOINT:}
+  # Legacy configuration below
+  secretId: ${COS_SECRET_ID:}
+  secretKey: ${COS_SECRET_KEY:}
+  baseUrl: ${COS_BASE_URL:}
+
+# Alibaba Cloud OSS configuration (takes effect when storage.type=oss)
+oss:
+  endpoint: ${OSS_ENDPOINT:}
+  access-key-id: ${OSS_ACCESS_KEY_ID:}
+  access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+  region-name: ${OSS_REGION_NAME:cn-chengdu}
+  bucket-name: ${OSS_BUCKET_NAME:}
+
+# S3 protocol configuration (takes effect when storage.type=s3, supports MinIO etc.)
+s3:
+  endpoint: ${S3_ENDPOINT:}
+  access-key: ${S3_ACCESS_KEY:}
+  secret-key: ${S3_SECRET_KEY:}
+  bucket-name: ${S3_BUCKET_NAME:}
+  region: ${S3_REGION:us-east-1}
+vector-store:
+  engine: milvus
+
+milvus:
+  uri: ${MILVUS_URI:http://localhost:19530}
+  user: ${MILVUS_USER:root}
+  password: ${MILVUS_PASSWORD:your_milvus_password}
+
+code:
+  execute:
+    url: ${CODE_EXECUTE_URL:http://localhost:8020/api/run_code_with_log}
+
+# 日志模块配置
+log-module:
+  log:
+    rust-service:
+      # Rust 日志服务的基础 URL
+      base-url: ${LOG_SERVICE_URL:http://localhost:8097}
+      # 连接超时时间（秒）
+      connect-timeout-seconds: 10
+      # 写入超时时间（秒）
+      write-timeout-seconds: 30
+      # 读取超时时间（秒）
+      read-timeout-seconds: 30
+      # 是否启用连接池
+      enable-connection-pool: true
+      # 最大空闲连接数
+      max-idle-connections: 5
+      # 连接保持存活时间（分钟）
+      keep-alive-duration-minutes: 5
+
+search:
+  elasticsearch:
+    url: ${ES_URL:http://localhost:9200}
+    username: ${ES_USERNAME:elastic}
+    password: ${ES_PASSWORD:your_elasticsearch_password}
+    api_key: ${ES_API_KEY:}
+# 生态市场模块配置
+eco-market:
+  # 服务端配置
+  server:
+    # 远程server端的 ip端口配置
+    base-url: ${ECO_MARKET_SERVER_URL:https://test-agent-market-api.xspaceagi.com}
+  client:
+    # 客户端配置
+    retry:
+      #自动注册客户端到 server端, 重试间隔时间，单位：秒;
+      interval: 300
+
+mcp:
+  proxy-base-url: ${MCP_PROXY_URL:http://localhost:8020}
+
+knife4j:
+  # 开启增强配置
+  enable: true
+  # 标识是否生产环境：true-生产环境关闭文档，false-显示文档
+  production: false
+
+custom-page:
+  http-proxy:
+    host: ${CUSTOM_PAGE_PROXY_HOST:0.0.0.0}
+    port: ${CUSTOM_PAGE_PROXY_PORT:18082}
+  dev-server-host: ${DEV_SERVER_HOST:http://localhost}
+  prod-server-host: ${PROD_SERVER_HOST:http://localhost:8099}
+  build-server:
+    base-url: ${BUILD_SERVER_URL:http://localhost:60000/api}
+  ai-agent:
+    base-url: ${AI_AGENT_URL:http://localhost:8086}
+  docker-proxy:
+    enable: ${DOCKER_PROXY_ENABLE:true}
+    base-url: ${DOCKER_PROXY_URL:http://localhost:8088}
+
+computer:
+  proxy:
+    host: ${COMPUTER_PROXY_HOST:0.0.0.0}
+    port: ${COMPUTER_PROXY_PORT:18085}
+
+supportCustomDomain: true
+
+# 内外穿透相关服务配置
+reverse:
+  server:
+    # 内部服务器配置
+    inner:
+      # 内部服务可访问地址，如果分布式部署，可以在每台主机上通过环境变量制定 SERVICE_HOST
+      service-host: ${SERVICE_HOST:127.0.0.1}
+      # 绑定主机地址，如果分布式部署，可以在每台主机上通过环境变量制定 BIND_HOST
+      bind-host: ${BIND_HOST:0.0.0.0}
+      # 内部服务器端口范围
+      ports: ${REVERSE_PORTS:30000-40000}
+    # 外部服务器配置
+    outer:
+      # 外部用于与客户端保持连接的服务器主机地址，多个用英文逗号隔开，例如 192.168.1.12,192.168.1.13，留空时使用平台服务器地址
+      host: ${OUTER_HOST:}
+      # 外部服务器端口
+      port: ${OUTER_PORT:10076}
+
+model-api-proxy:
+  base-api-url: ${MODEL_API_BASE_URL:}
+  enable-model-proxy: ${MODEL_PROXY_ENABLE:true}
+  port: ${MODEL_PROXY_PORT:18086}
+  #记录日志
+  save-log: ${MODEL_PROXY_SAVE_LOG:true}

@@ -1,0 +1,37 @@
+/**
+ * App 组件样式
+ * 包含顶部栏、布局等样式
+ */
+
+/* 顶部栏右侧信息区 */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 用户名 */
+.username {
+  color: #6B7280;
+  font-size: 12px;
+}
+
+/* 状态徽章文字 */
+.badgeText {
+  color: #6B7280;
+  font-size: 12px;
+}
+
+/* 就绪、繁忙状态：橙色小点 */
+.badgeIdle :global(.ant-badge-status-dot) {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+}
+
+/* Webview 模式下顶部栏左侧操作区（替代 logo） */
+.headerWebviewActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

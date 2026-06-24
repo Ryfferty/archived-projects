@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.file.infra.dao.mapper.FileRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.file.infra.dao.entity.FileRecord">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="targetType" column="target_type" jdbcType="VARCHAR"/>
+        <result property="targetId" column="target_id" jdbcType="BIGINT"/>
+        <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+        <result property="fileSize" column="file_size" jdbcType="BIGINT"/>
+        <result property="fileType" column="file_type" jdbcType="VARCHAR"/>
+        <result property="fileExtension" column="file_extension" jdbcType="VARCHAR"/>
+        <result property="metadata" column="metadata" jdbcType="VARCHAR"/>
+        <result property="fileKey" column="file_key" jdbcType="VARCHAR"/>
+        <result property="storageType" column="storage_type" jdbcType="VARCHAR"/>
+        <result property="fileUrl" column="file_url" jdbcType="VARCHAR"/>
+        <result property="authRequired" column="auth_required" jdbcType="BOOLEAN"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, _tenant_id, user_id, target_type, target_id, file_name, file_size, file_type,
+        file_extension, metadata, file_key, storage_type, file_url, auth_required, status, created, modified
+    </sql>
+
+    <select id="findByTenantIdAndUserId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM file_record
+        WHERE _tenant_id = #{tenantId}
+        AND user_id = #{userId}
+        AND status = 'active'
+        ORDER BY created DESC
+    </select>
+
+    <select id="findByTarget" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM file_record
+        WHERE _tenant_id = #{tenantId}
+        AND target_type = #{targetType}
+        AND target_id = #{targetId}
+        AND status = 'active'
+        ORDER BY created DESC
+    </select>
+
+    <select id="findByFileKey" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM file_record
+        WHERE file_key = #{fileKey}
+        LIMIT 1
+    </select>
+
+    <select id="findByStorageType" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM file_record
+        WHERE _tenant_id = #{tenantId}
+        AND storage_type = #{storageType}
+        AND status = 'active'
+        ORDER BY created DESC
+    </select>
+
+    <update id="updateStatusByIds">
+        UPDATE file_record
+        SET status = #{status},
+        modified = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

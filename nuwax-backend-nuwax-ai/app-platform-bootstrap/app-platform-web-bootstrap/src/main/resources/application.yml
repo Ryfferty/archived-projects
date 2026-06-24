@@ -1,0 +1,134 @@
+spring:
+  application:
+    name: app-platform
+  profiles:
+    active: @activatedProperties@
+  # 默认为false。如果开启的话在事务真正物理提交doCommit失败后会进行回滚。
+  transaction:
+    rollback-on-commit-failure: true
+    # [可选]配置,自行判断是否使用Spring Cache注解(@Cacheable 等)选项,如果不启用,在启动类上注释: @EnableCaching
+  cache:
+    type: CAFFEINE
+    #应用程序启动创建缓存的名称，必须将所有注释为@Cacheable缓存name（或value）罗列在这里
+    cache-names:
+      - queryOrgTree
+      - getUserInfo
+      - tableTotalCache
+    caffeine:
+      spec: "maximumSize=2000,expireAfterAccess=30s"
+  # 排除DruidDataSourceAutoConfigure,使用dynamic-datasource-spring-boot3-starter
+#  autoconfigure:
+#    exclude: com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+
+server:
+  compression:
+    enabled: true
+    min-response-size: 2KB
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
+  tomcat:
+    # 设置POST请求大小限制，0表示不限制
+    max-http-form-post-size: 0
+    # 设置URI编码为UTF-8，支持中文等非ASCII字符
+    uri-encoding: UTF-8
+
+logging:
+  config: classpath:logback-custom.xml
+
+#允许跨域的根域名
+access:
+  control:
+    allow-origin: "*"
+
+#无需检测登录的接口，前缀匹配
+auth:
+  excludePath:
+    - /api/user/login
+    - /health
+    - /ready
+    - /favicon.ico
+    - /doc.html
+    - /webjars/**
+    - /v3/**
+    - /api/user/login
+    - /api/user/passwordLogin
+    - /api/user/codeLogin
+    - /api/user/mp/codeLogin
+    - /api/user/code/send
+    - /api/user/email/check
+    - /api/user/password/reset
+    - /api/tenant/config
+    - /api/system/eco/market/server
+    - /api/temp/chat/conversation
+    - /api/temp/chat/completions
+    - /api/logo/
+    - /api/file
+    - /api/f/
+    - /api/mcp/sse
+    - /api/mcp/message
+    - /api/v1/
+    - /api/ticket/redirect
+    - /api/audio
+    - /api/page/workflow
+    - /api/page/plugin
+    - /api/published/category
+    - /api/published/agent/list
+    - /api/computer/static
+    - /api/agent/conversation/share/detail
+    - /api/sys/v
+    - /api/sandbox/config/reg
+    - /api/sandbox/config/health/
+    - /api/sandbox/config/redirect/
+    # IM：三方回调免登录
+    - /api/im/feishu
+    - /api/im/dingtalk
+    - /api/im/wework
+    - /api/i18n/
+
+# DataSource Config
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml
+  tenant:
+    ignoreTenantTables:
+      - tenant
+      - pf_retry_data
+      - system_config
+      - card
+      - knowledge_task
+      - knowledge_task_history
+      - schedule_task
+      - eco_market_server_secret
+      - eco_market_server_config
+      - eco_market_server_publish_config
+      - eco_market_client_secret
+
+  # 扫描此包下pojo类生成短别名,在xml中可以使用类名,不用输全路径类名
+  type-aliases-package: com.xspaceagi.**.infra.dao.entity
+
+  # 此包下的类会由SqlSessionFactoryBean注册成TypeHandler
+  type-handlers-package:
+  global-config:
+    # 数据库配置
+    db-config:
+      # 默认值是ID_WORKER(框架生成的分布式唯一ID,Long型),其他选项AUTO(数据库自增),INPUT(自定义),UUID(框架生成uuid),ID_WORKER_STR(框架生成的分布式唯一ID,String型)
+      id-type: auto
+      # 字段策略：涉及insert,update及wrapper内部的entity属性生成的where条件;有4个选项IGNORED(不判断),NOT_NULL(非null即可),NOT_EMPTY(非null且非空串),DEFAULT(非null即可)
+      # 比如User对象name是""空串,调用insert接口,IGNORED会插入空串,NOT_NULL会插入空串,NOT_EMPTY不会插入name字段
+      where-strategy: NOT_EMPTY
+
+# nuwax-cli、saas、manual
+installation-source: saas
+
+app:
+  version: 1.0.8.3
+
+stt:
+  api:
+    base-url: https://stt-api.nuwax.com
+
+sandbox:
+  api:
+    rewrite:
+      allow-path:
+        - "skill/**"
+        - "publish/apply"
+        - "im/wechat/push-message"

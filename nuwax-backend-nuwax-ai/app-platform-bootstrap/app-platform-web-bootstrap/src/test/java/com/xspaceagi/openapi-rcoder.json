@@ -1,0 +1,2493 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RCoder AI API",
+    "description": "\nRCoder AI 服务 API\n\n基于 ACP (Agent Client Protocol) 的 AI 驱动开发平台，提供完整的 AI 代理集成解决方案。\n\n## 主要功能\n\n- **智能对话**: 支持文本、图像、音频、文档等多媒体内容的 AI 交互\n- **实时通知**: 通过 SSE 协议提供 AI 代理执行进度的实时推送\n- **会话管理**: 完整的会话生命周期管理，支持任务取消\n- **项目隔离**: 每个对话在独立的项目工作空间中进行，确保安全性\n- **Pingora 反向代理**: 基于 Cloudflare Pingora 的高性能反向代理服务\n\n## 技术架构\n\n- **协议**: ACP (Agent Client Protocol) v0.4\n- **代理类型**: 支持 Codex、Claude、Proxy 三种 AI 代理\n- **并发**: 基于 MPMC 架构的高并发处理\n- **实时通信**: Server-Sent Events (SSE) 协议\n- **反向代理**: Cloudflare Pingora 高性能代理服务器\n\n## Pingora 代理功能\n\n- **端口路由**: `/proxy/{port}/{path}` - 动态路由到任意端口的后端服务\n- **负载均衡**: 支持 Round Robin 算法和健康检查\n- **动态发现**: 自动发现和添加后端服务，无需预配置\n- **高性能**: 基于 Rust 异步 I/O 的高性能代理\n\n## 使用流程\n\n1. 调用 `/chat` 接口发送对话请求\n2. 通过 `/agent/progress/{session_id}` 建立 SSE 连接接收实时更新\n3. 可随时通过 `/agent/session/cancel` 取消正在执行的任务\n4. 使用 `/proxy/{port}/{path}` 代理请求到任意后端服务\n\n## 代理接口示例\n\n- `GET /proxy/status` - 查看代理服务状态\n- `GET /proxy/3000/api/users` - 代理到端口 3000 的服务\n- `GET /proxy/8080/health` - 代理到端口 8080 的健康检查\n- `GET /proxy/stats` - 查看代理统计信息\n",
+    "contact": {
+      "name": "RCoder Team",
+      "url": "https://github.com/rcoder/rcoder",
+      "email": "team@rcoder.com"
+    },
+    "license": {
+      "name": "MIT OR Apache-2.0",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "本地开发环境"
+    },
+    {
+      "url": "https://api.rcoder.com",
+      "description": "生产环境"
+    },
+    {
+      "url": "https://staging-api.rcoder.com",
+      "description": "测试环境"
+    }
+  ],
+  "paths": {
+    "/agent/progress/{session_id}": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "建立Agent会话通知连接",
+        "description": "通过SSE协议建立与指定会话的实时通信连接，推送AI代理执行进度更新。\n\n## 🎯 前端对接指南\n\n### 🔌 连接建立\n前端通过此接口建立SSE连接后，会实时接收该会话的所有状态更新消息。\n\n### 📨 消息格式\n每条消息都是标准的SSE格式，包含事件类型和数据：\n```javascript\n// SSE消息格式\nevent: [事件类型]\ndata: [JSON格式的UnifiedSessionMessage]\n\n// 例如：\nevent: prompt_start\ndata: {\"session_id\":\"session456\",\"message_type\":\"SessionPromptStart\",\"sub_type\":\"prompt_start\",\"data\":{},\"timestamp\":\"2023-12-01T10:30:00Z\"}\n```\n\n### 🔄 事件类型映射\n- `prompt_start`: SessionPromptStart消息\n- `prompt_end`: SessionPromptEnd消息  \n- `user_message_chunk`: 用户消息块\n- `agent_message_chunk`: Agent响应消息块\n- `agent_thought_chunk`: Agent思考过程\n- `tool_call`: 工具调用通知\n- `tool_call_update`: 工具调用状态更新\n- `available_commands_update`: 可用命令更新\n- `heartbeat`: 心跳消息\n\n## 📋 UnifiedSessionMessage 完整场景示例\n\n### 🚀 SessionPromptStart（用户请求开始）\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"SessionPromptStart\",\n  \"sub_type\": \"prompt_start\",\n  \"data\": {\n    \"type\": \"prompt_start\",\n    \"prompt\": \"帮我写一个Rust的Hello World程序\",\n    \"attachments\": [\n      {\n        \"type\": \"text\",\n        \"content\": \"这是附加的代码要求\"\n      }\n    ],\n    \"user_id\": \"user123\",\n    \"project_id\": \"test_project\"\n  },\n  \"timestamp\": \"2023-12-01T10:30:00Z\"\n}\n```\n\n### 🔄 AgentSessionUpdate（执行过程更新）\n\n#### Agent思考过程\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"AgentSessionUpdate\",\n  \"sub_type\": \"agent_thought_chunk\",\n  \"data\": {\n    \"thinking\": \"用户要求写一个Hello World程序，我需要创建main.rs文件并包含基本的println!宏调用。\",\n    \"confidence\": 0.95\n  },\n  \"timestamp\": \"2023-12-01T10:30:01Z\"\n}\n```\n\n#### Agent文本响应\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"AgentSessionUpdate\",\n  \"sub_type\": \"agent_message_chunk\",\n  \"data\": {\n    \"content\": {\n      \"type\": \"text\",\n      \"text\": \"当然可以！以下是一个简单的Rust Hello World程序：\\n\\n```rust\\nfn main() {\\n    println!(\\\"Hello, World!\\\");\\n}\\n```\"\n    },\n    \"is_final\": false\n  },\n  \"timestamp\": \"2023-12-01T10:30:02Z\"\n}\n```\n\n#### 工具调用\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"AgentSessionUpdate\",\n  \"sub_type\": \"tool_call\",\n  \"data\": {\n    \"tool_call\": {\n      \"name\": \"write_file\",\n      \"arguments\": {\n        \"path\": \"src/main.rs\",\n        \"content\": \"fn main() {\\n    println!(\\\"Hello, World!\\\");\\n}\"\n      },\n      \"tool_call_id\": \"call_123456\"\n    },\n    \"status\": \"started\"\n  },\n  \"timestamp\": \"2023-12-01T10:30:03Z\"\n}\n```\n\n#### 工具调用更新\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"AgentSessionUpdate\",\n  \"sub_type\": \"tool_call_update\",\n  \"data\": {\n    \"tool_call_id\": \"call_123456\",\n    \"result\": {\n      \"status\": \"success\",\n      \"output\": {\n        \"path\": \"src/main.rs\",\n        \"content_length\": 48,\n        \"created\": true\n      }\n    }\n  },\n  \"timestamp\": \"2023-12-01T10:30:04Z\"\n}\n```\n\n### 🛑 SessionPromptEnd（执行结束）\n\n#### 正常结束\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"SessionPromptEnd\",\n  \"sub_type\": \"end_turn\",\n  \"data\": {\n    \"stop_reason\": \"end_turn\",\n    \"message\": \"成功创建了Hello World程序\",\n    \"tool_calls\": [\n      {\n        \"name\": \"write_file\",\n        \"status\": \"completed\",\n        \"duration_ms\": 150\n      }\n    ],\n    \"total_tokens\": 245,\n    \"duration_ms\": 3200\n  },\n  \"timestamp\": \"2023-12-01T10:30:05Z\"\n}\n```\n\n#### 令牌限制错误\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"SessionPromptEnd\",\n  \"sub_type\": \"max_tokens\",\n  \"data\": {\n    \"stop_reason\": \"max_tokens\",\n    \"message\": \"已达到最大令牌数限制\",\n    \"error_message\": \"Token limit exceeded: max_tokens=4000, used_tokens=4025\",\n    \"suggestion\": \"请简化请求或分段处理\"\n  },\n  \"timestamp\": \"2023-12-01T10:30:45Z\"\n}\n```\n\n#### 用户取消\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"SessionPromptEnd\",\n  \"sub_type\": \"cancelled\",\n  \"data\": {\n    \"stop_reason\": \"cancelled\",\n    \"message\": \"用户取消了请求\",\n    \"error_message\": \"Request cancelled by user\",\n    \"progress\": 65\n  },\n  \"timestamp\": \"2023-12-01T10:30:05Z\"\n}\n```\n\n### 💓 Heartbeat（心跳消息）\n```json\n{\n  \"session_id\": \"session456\",\n  \"message_type\": \"Heartbeat\",\n  \"sub_type\": \"ping\",\n  \"data\": {\n    \"type\": \"heartbeat\",\n    \"message\": \"keep-alive\",\n    \"timestamp\": \"2023-12-01T10:31:00Z\"\n  },\n  \"timestamp\": \"2023-12-01T10:31:00Z\"\n}\n```\n\n### 📊 典型完整流程示例\n1. **SessionPromptStart** → 用户发送prompt\n2. **AgentSessionUpdate** → 多种更新消息流（思考→响应→工具调用→工具结果）\n3. **SessionPromptEnd** → 执行完成状态\n4. **Heartbeat** → 定期保持连接\n\n## 💡 前端开发建议\n1. **连接管理**: 实现自动重连机制\n2. **消息队列**: 对消息进行队列处理，避免阻塞UI\n3. **心跳检测**: 定期检查心跳消息，确保连接活跃\n4. **错误处理**: 监听连接错误和SessionPromptEnd中的错误信息\n5. **状态同步**: 根据消息类型和子类型更新UI状态",
+        "operationId": "agent_session_notification",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "会话ID，用于标识特定的会话连接",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "session456"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功建立SSE连接，开始推送实时更新。连接建立后，将实时推送该会话的所有状态更新消息。",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnifiedSessionMessage"
+                },
+                "examples": {
+                  "AgentMessageChunk": {
+                    "summary": "Agent响应消息块",
+                    "value": {
+                      "data": {
+                        "content": {
+                          "annotations": null,
+                          "meta": null,
+                          "text": "当然可以！以下是一个简单的Rust Hello World程序：\\n\\n```rust\\nfn main() {\\n    println!(\\\"Hello, World!\\\");\\n}\\n```\\n\\n要运行这个程序，您需要：\\n1. 安装Rust环境\\n2. 创建项目：`cargo new hello_world`\\n3. 替换src/main.rs内容\\n4. 运行：`cargo run`",
+                          "type": "text"
+                        },
+                        "is_final": false
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "agent_message_chunk",
+                      "timestamp": "2023-12-01T10:30:02Z"
+                    }
+                  },
+                  "AgentThoughtChunk": {
+                    "summary": "Agent思考过程",
+                    "value": {
+                      "data": {
+                        "confidence": 0.95,
+                        "content": {
+                          "annotations": null,
+                          "meta": null,
+                          "text": "用户要求创建Rust Hello World程序。我需要：1) 创建项目结构，2) 编写main.rs文件，3) 提供运行说明。这是一个基础任务，可以直接完成。",
+                          "type": "text"
+                        }
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "agent_thought_chunk",
+                      "timestamp": "2023-12-01T10:30:01Z"
+                    }
+                  },
+                  "AvailableCommandsUpdate": {
+                    "summary": "可用命令更新",
+                    "value": {
+                      "data": {
+                        "available_commands": [
+                          {
+                            "description": "写入文件内容",
+                            "input": {
+                              "hint": "请输入文件路径和内容"
+                            },
+                            "meta": null,
+                            "name": "write_file"
+                          },
+                          {
+                            "description": "读取文件内容",
+                            "input": {
+                              "hint": "请输入文件路径"
+                            },
+                            "meta": null,
+                            "name": "read_file"
+                          },
+                          {
+                            "description": "执行系统命令",
+                            "input": {
+                              "hint": "请输入要执行的命令"
+                            },
+                            "meta": null,
+                            "name": "run_command"
+                          }
+                        ]
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "available_commands_update",
+                      "timestamp": "2023-12-01T10:30:00Z"
+                    }
+                  },
+                  "CurrentModeUpdate": {
+                    "summary": "当前模式更新",
+                    "value": {
+                      "data": {
+                        "available_modes": [
+                          {
+                            "description": "回答问题和提供建议",
+                            "id": "ask",
+                            "name": "问答模式"
+                          },
+                          {
+                            "description": "编写和修改代码",
+                            "id": "code",
+                            "name": "编程模式"
+                          },
+                          {
+                            "description": "设计和规划项目架构",
+                            "id": "architect",
+                            "name": "架构模式"
+                          }
+                        ],
+                        "current_mode_id": "code"
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "current_mode_update",
+                      "timestamp": "2023-12-01T10:30:00Z"
+                    }
+                  },
+                  "Heartbeat": {
+                    "summary": "心跳消息",
+                    "value": {
+                      "data": {
+                        "message": "keep-alive",
+                        "timestamp": "2023-12-01T10:31:00Z",
+                        "type": "heartbeat"
+                      },
+                      "message_type": "Heartbeat",
+                      "session_id": "session456",
+                      "sub_type": "ping",
+                      "timestamp": "2023-12-01T10:31:00Z"
+                    }
+                  },
+                  "Plan": {
+                    "summary": "执行计划",
+                    "value": {
+                      "data": {
+                        "entries": [
+                          {
+                            "content": "创建项目目录结构",
+                            "meta": null,
+                            "priority": "high",
+                            "status": "completed"
+                          },
+                          {
+                            "content": "编写main.rs文件",
+                            "meta": null,
+                            "priority": "high",
+                            "status": "in_progress"
+                          },
+                          {
+                            "content": "验证程序运行",
+                            "meta": null,
+                            "priority": "medium",
+                            "status": "pending"
+                          }
+                        ],
+                        "meta": null
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "plan",
+                      "timestamp": "2023-12-01T10:30:01Z"
+                    }
+                  },
+                  "SessionPromptEnd_EndTurn": {
+                    "summary": "正常结束",
+                    "value": {
+                      "data": {
+                        "duration_ms": 3200,
+                        "message": "任务完成：成功创建Hello World程序",
+                        "stop_reason": "end_turn",
+                        "tool_calls": [
+                          {
+                            "duration_ms": 150,
+                            "name": "write_file",
+                            "status": "completed"
+                          }
+                        ],
+                        "total_tokens": 245
+                      },
+                      "message_type": "SessionPromptEnd",
+                      "session_id": "session456",
+                      "sub_type": "end_turn",
+                      "timestamp": "2023-12-01T10:30:05Z"
+                    }
+                  },
+                  "SessionPromptEnd_MaxTokens": {
+                    "summary": "令牌限制",
+                    "value": {
+                      "data": {
+                        "error_message": "Token limit exceeded: max_tokens=4000, used_tokens=4025",
+                        "message": "已达到最大令牌数限制",
+                        "stop_reason": "max_tokens",
+                        "suggestion": "请简化请求或分段处理"
+                      },
+                      "message_type": "SessionPromptEnd",
+                      "session_id": "session456",
+                      "sub_type": "max_tokens",
+                      "timestamp": "2023-12-01T10:30:45Z"
+                    }
+                  },
+                  "SessionPromptStart": {
+                    "summary": "用户请求开始",
+                    "value": {
+                      "data": {
+                        "attachments": [
+                          {
+                            "content": "请包含详细的注释说明",
+                            "type": "text"
+                          }
+                        ],
+                        "project_id": "test_project",
+                        "prompt": "帮我写一个Rust的Hello World程序",
+                        "type": "prompt_start",
+                        "user_id": "user123"
+                      },
+                      "message_type": "SessionPromptStart",
+                      "session_id": "session456",
+                      "sub_type": "prompt_start",
+                      "timestamp": "2023-12-01T10:30:00Z"
+                    }
+                  },
+                  "ToolCall": {
+                    "summary": "工具调用",
+                    "value": {
+                      "data": {
+                        "content": [],
+                        "kind": "file",
+                        "locations": [
+                          {
+                            "path": "src/main.rs",
+                            "range": {
+                              "end": {
+                                "character": 1,
+                                "line": 3
+                              },
+                              "start": {
+                                "character": 0,
+                                "line": 0
+                              }
+                            }
+                          }
+                        ],
+                        "raw_input": {
+                          "content": "fn main() {\n    println!(\"Hello, World!\");\n}",
+                          "path": "src/main.rs"
+                        },
+                        "raw_output": null,
+                        "status": "pending",
+                        "title": "创建文件",
+                        "toolCallId": "call_123456"
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "tool_call",
+                      "timestamp": "2023-12-01T10:30:03Z"
+                    }
+                  },
+                  "ToolCallUpdate": {
+                    "summary": "工具调用状态更新",
+                    "value": {
+                      "data": {
+                        "result": {
+                          "checksum": "abc123",
+                          "content_length": 48,
+                          "created": true,
+                          "path": "src/main.rs"
+                        },
+                        "status": "success",
+                        "toolCallId": "call_123456"
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "tool_call_update",
+                      "timestamp": "2023-12-01T10:30:04Z"
+                    }
+                  },
+                  "UserMessageChunk": {
+                    "summary": "用户消息块",
+                    "value": {
+                      "data": {
+                        "content": {
+                          "annotations": null,
+                          "meta": null,
+                          "text": "请帮我创建一个Rust项目，包含Hello World程序",
+                          "type": "text"
+                        }
+                      },
+                      "message_type": "AgentSessionUpdate",
+                      "session_id": "session456",
+                      "sub_type": "user_message_chunk",
+                      "timestamp": "2023-12-01T10:30:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "无效的会话ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "INVALID_SESSION",
+                    "message": "Invalid session ID"
+                  },
+                  "success": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "会话不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "SESSION_NOT_FOUND",
+                    "message": "Session not found"
+                  },
+                  "success": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/session/cancel": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "取消Agent任务",
+        "description": "通过ACP协议发送取消通知，停止指定会话的AI代理任务执行",
+        "operationId": "agent_session_cancel",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "description": "项目ID，用于标识特定的项目",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "test_project"
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "description": "会话ID，用于标识要取消的会话",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "session456"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功发送取消请求",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_CancelResponse"
+                },
+                "example": {
+                  "data": {
+                    "session_id": "session456",
+                    "success": true
+                  },
+                  "error": null,
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "INVALID_PARAMS",
+                    "message": "Invalid project_id or session_id"
+                  },
+                  "success": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "未找到对应的项目或会话",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "PROJECT_NOT_FOUND",
+                    "message": "Project or session not found"
+                  },
+                  "success": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "取消操作失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "CANCEL_FAILED",
+                    "message": "Failed to cancel agent task"
+                  },
+                  "success": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/status/{project_id}": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "查询Agent状态",
+        "description": "查询指定项目的Agent服务状态信息。如果Agent存活，返回完整的状态信息（包括会话ID、活动时间、模型配置等）；如果Agent不存活，只返回project_id和is_alive=false。",
+        "operationId": "agent_status",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "description": "项目ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "test_project"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取Agent状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_AgentStatusResponse"
+                },
+                "examples": {
+                  "Agent不存活": {
+                    "value": {
+                      "data": {
+                        "is_alive": false,
+                        "project_id": "test_project"
+                      },
+                      "error": null,
+                      "success": true
+                    }
+                  },
+                  "Agent存活": {
+                    "value": {
+                      "data": {
+                        "created_at": "2024-01-01T10:00:00Z",
+                        "is_alive": true,
+                        "last_activity": "2024-01-01T12:00:00Z",
+                        "model_provider": {
+                          "api_protocol": "OpenAI",
+                          "default_model": "gpt-4",
+                          "id": "custom",
+                          "name": "custom"
+                        },
+                        "project_id": "test_project",
+                        "session_id": "session123",
+                        "status": "Active"
+                      },
+                      "error": null,
+                      "success": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "INVALID_PARAMS",
+                    "message": "project_id cannot be empty"
+                  },
+                  "success": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/stop": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "停止Agent服务",
+        "description": "停止指定项目的Agent服务，用于测试和管理。基于RAII原则自动清理所有相关资源。",
+        "operationId": "agent_stop",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "description": "项目ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "test_project"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功停止Agent服务",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_StopAgentResponse"
+                },
+                "example": {
+                  "data": {
+                    "message": "Agent服务已成功停止",
+                    "project_id": "test_project",
+                    "session_id": "session123",
+                    "success": true
+                  },
+                  "error": null,
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "INVALID_PARAMS",
+                    "message": "Invalid project_id parameter"
+                  },
+                  "success": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "未找到对应的Agent服务",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "AGENT_NOT_FOUND",
+                    "message": "No agent service found for the specified project_id"
+                  },
+                  "success": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "发送聊天消息",
+        "description": "通过 ACP 协议发送聊天消息给 AI 代理，支持文本和多媒体内容",
+        "operationId": "handle_chat",
+        "requestBody": {
+          "description": "聊天请求，包含用户输入的 prompt 和可选的多媒体附件",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功处理聊天请求，返回项目 ID 和会话 ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_ChatResponse"
+                },
+                "example": {
+                  "data": {
+                    "error": null,
+                    "project_id": "test_project",
+                    "session_id": "session456"
+                  },
+                  "error": null,
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "VALIDATION001",
+                    "message": "Invalid request parameters"
+                  },
+                  "success": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResult_String"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "INTERNAL001",
+                    "message": "Internal server error"
+                  },
+                  "success": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "健康检查端点",
+        "description": "检查服务的健康状态",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "服务健康状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "使用查询参数代理（向后兼容）",
+        "description": "通过查询参数指定目标端口和路径，保持向后兼容性",
+        "operationId": "proxy_with_query_params",
+        "parameters": [
+          {
+            "name": "port",
+            "in": "query",
+            "description": "端口号（用于向后兼容）",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            },
+            "example": 3000
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "路径（可选）",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "example": "/api/users"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "代理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "缺少端口参数",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "代理服务未启用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy/config": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "获取 Pingora 代理配置",
+        "description": "返回当前代理服务的配置信息",
+        "operationId": "proxy_config",
+        "responses": {
+          "200": {
+            "description": "成功获取配置信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyConfig"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "代理服务未启用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy/stats": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "获取 Pingora 代理统计信息",
+        "description": "返回代理服务的请求统计和性能指标",
+        "operationId": "proxy_stats",
+        "responses": {
+          "200": {
+            "description": "成功获取统计信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyStats"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "代理服务未启用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy/status": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "获取 Pingora 代理服务状态",
+        "description": "返回当前 Pingora 代理服务的运行状态和配置信息",
+        "operationId": "proxy_status",
+        "responses": {
+          "200": {
+            "description": "成功获取代理状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "代理服务未启用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy/{port}": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "代理到指定端口（无路径）",
+        "description": "将请求代理到指定端口的服务，无额外路径",
+        "operationId": "proxy_to_port",
+        "parameters": [
+          {
+            "name": "port",
+            "in": "path",
+            "description": "目标端口号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "代理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "后端服务未找到",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "代理错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxy/{port}/{*path}": {
+      "get": {
+        "tags": [
+          "proxy"
+        ],
+        "summary": "代理到指定端口和路径",
+        "description": "将请求代理到指定端口的服务，包含完整路径信息",
+        "operationId": "proxy_to_port_with_path",
+        "parameters": [
+          {
+            "name": "port",
+            "in": "path",
+            "description": "目标端口号",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "description": "目标路径",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "代理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "后端服务未找到",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "代理错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProxyErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentStatus": {
+        "type": "string",
+        "description": "Agent 服务状态",
+        "enum": [
+          "Active",
+          "Idle",
+          "Terminating"
+        ]
+      },
+      "AgentStatusResponse": {
+        "type": "object",
+        "description": "Agent 状态查询响应",
+        "required": [
+          "project_id",
+          "is_alive"
+        ],
+        "properties": {
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "创建时间（仅当 is_alive 为 true 时存在）",
+            "example": "2024-01-01T10:00:00Z"
+          },
+          "is_alive": {
+            "type": "boolean",
+            "description": "Agent 是否存活",
+            "example": true
+          },
+          "last_activity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "最后活动时间（仅当 is_alive 为 true 时存在）",
+            "example": "2024-01-01T12:00:00Z"
+          },
+          "model_provider": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModelProviderSafeInfo",
+                "description": "模型提供商安全信息（仅当 is_alive 为 true 时存在）"
+              }
+            ]
+          },
+          "project_id": {
+            "type": "string",
+            "description": "项目ID",
+            "example": "test_project"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "会话ID（仅当 is_alive 为 true 时存在）",
+            "example": "session123"
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentStatus",
+                "description": "Agent 服务状态（仅当 is_alive 为 true 时存在）"
+              }
+            ]
+          }
+        }
+      },
+      "Attachment": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "文本附件",
+            "required": [
+              "content",
+              "type"
+            ],
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/TextAttachment",
+                "description": "文本附件"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Text"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "图像附件",
+            "required": [
+              "content",
+              "type"
+            ],
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/ImageAttachment",
+                "description": "图像附件"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Image"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "音频附件",
+            "required": [
+              "content",
+              "type"
+            ],
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/AudioAttachment",
+                "description": "音频附件"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Audio"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "文档附件",
+            "required": [
+              "content",
+              "type"
+            ],
+            "properties": {
+              "content": {
+                "$ref": "#/components/schemas/DocumentAttachment",
+                "description": "文档附件"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Document"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "附件枚举 - 支持多种媒体类型"
+      },
+      "AttachmentSource": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "文件路径，相对于项目目录",
+            "required": [
+              "data",
+              "source_type"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "文件路径，相对于项目目录",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "FilePath"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Base64 编码的数据",
+            "required": [
+              "data",
+              "source_type"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "Base64 编码的数据",
+                "required": [
+                  "data",
+                  "mime_type"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "string"
+                  },
+                  "mime_type": {
+                    "type": "string"
+                  }
+                }
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "Base64"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "URL 链接",
+            "required": [
+              "data",
+              "source_type"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "URL 链接",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              },
+              "source_type": {
+                "type": "string",
+                "enum": [
+                  "Url"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "附件数据源类型"
+      },
+      "AudioAttachment": {
+        "type": "object",
+        "description": "音频附件",
+        "required": [
+          "id",
+          "source",
+          "mime_type"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的描述"
+          },
+          "duration": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "可选的时长（秒）"
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的文件名"
+          },
+          "id": {
+            "type": "string",
+            "description": "附件唯一标识"
+          },
+          "mime_type": {
+            "type": "string",
+            "description": "MIME 类型 (如: audio/mp3, audio/wav)"
+          },
+          "source": {
+            "$ref": "#/components/schemas/AttachmentSource",
+            "description": "数据源"
+          }
+        }
+      },
+      "BackendInfo": {
+        "type": "object",
+        "description": "后端服务信息",
+        "required": [
+          "port",
+          "host",
+          "health_status",
+          "last_check"
+        ],
+        "properties": {
+          "health_status": {
+            "type": "string",
+            "description": "健康状态",
+            "example": "healthy"
+          },
+          "host": {
+            "type": "string",
+            "description": "主机地址",
+            "example": "127.0.0.1"
+          },
+          "last_check": {
+            "type": "string",
+            "description": "最后检查时间",
+            "example": "2025-01-12T10:30:00Z"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "端口号",
+            "example": 3000,
+            "minimum": 0
+          }
+        }
+      },
+      "CancelResponse": {
+        "type": "object",
+        "description": "取消任务的响应",
+        "required": [
+          "success",
+          "session_id"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "被取消的会话ID",
+            "example": "session456"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "取消操作是否成功",
+            "example": true
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "description": "用户请求结构 - 支持多媒体内容",
+        "required": [
+          "prompt"
+        ],
+        "properties": {
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            },
+            "description": "可选的附件列表"
+          },
+          "data_source_attachments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "数据源附件列表 - 用于AI开发时获取外部数据源信息（如API接口、数据库等）\n直接传递 JSON 字符串数组，简化使用方式"
+          },
+          "model_provider": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModelProviderConfig",
+                "description": "模型配置"
+              }
+            ]
+          },
+          "project_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的项目 ID",
+            "example": "test_project"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "用户输入的 prompt",
+            "example": "帮我写一个 Rust 的 Hello World 程序"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的请求ID，如果不提供则自动生成，用于标识和追踪请求",
+            "example": "req_123456789"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的会话 ID，如果不提供则创建新会话",
+            "example": "session456"
+          }
+        }
+      },
+      "ChatResponse": {
+        "type": "object",
+        "description": "服务响应结构",
+        "required": [
+          "project_id",
+          "session_id"
+        ],
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的错误信息"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "项目 ID",
+            "example": "test_project"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "会话 ID",
+            "example": "session456"
+          }
+        }
+      },
+      "DocumentAttachment": {
+        "type": "object",
+        "description": "文档附件",
+        "required": [
+          "id",
+          "source",
+          "mime_type"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的描述"
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的文件名"
+          },
+          "id": {
+            "type": "string",
+            "description": "附件唯一标识"
+          },
+          "mime_type": {
+            "type": "string",
+            "description": "MIME 类型 (如: application/pdf, text/plain)"
+          },
+          "size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "可选的文件大小（字节）",
+            "minimum": 0
+          },
+          "source": {
+            "$ref": "#/components/schemas/AttachmentSource",
+            "description": "数据源"
+          }
+        }
+      },
+      "HealthCheckConfig": {
+        "type": "object",
+        "description": "健康检查配置",
+        "required": [
+          "enabled",
+          "interval_seconds",
+          "timeout_seconds",
+          "healthy_threshold",
+          "unhealthy_threshold"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "是否启用",
+            "example": true
+          },
+          "healthy_threshold": {
+            "type": "integer",
+            "format": "int32",
+            "description": "健康阈值",
+            "example": 2,
+            "minimum": 0
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "检查间隔 (秒)",
+            "example": 5,
+            "minimum": 0
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "超时时间 (秒)",
+            "example": 3,
+            "minimum": 0
+          },
+          "unhealthy_threshold": {
+            "type": "integer",
+            "format": "int32",
+            "description": "不健康阈值",
+            "example": 3,
+            "minimum": 0
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "description": "健康检查响应结构",
+        "required": [
+          "status",
+          "timestamp",
+          "service"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "服务名称"
+          },
+          "status": {
+            "type": "string",
+            "description": "服务状态"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "时间戳"
+          }
+        }
+      },
+      "HttpResult_AgentStatusResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "Agent 状态查询响应",
+            "required": [
+              "project_id",
+              "is_alive"
+            ],
+            "properties": {
+              "created_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "创建时间（仅当 is_alive 为 true 时存在）",
+                "example": "2024-01-01T10:00:00Z"
+              },
+              "is_alive": {
+                "type": "boolean",
+                "description": "Agent 是否存活",
+                "example": true
+              },
+              "last_activity": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "最后活动时间（仅当 is_alive 为 true 时存在）",
+                "example": "2024-01-01T12:00:00Z"
+              },
+              "model_provider": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ModelProviderSafeInfo",
+                    "description": "模型提供商安全信息（仅当 is_alive 为 true 时存在）"
+                  }
+                ]
+              },
+              "project_id": {
+                "type": "string",
+                "description": "项目ID",
+                "example": "test_project"
+              },
+              "session_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "会话ID（仅当 is_alive 为 true 时存在）",
+                "example": "session123"
+              },
+              "status": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AgentStatus",
+                    "description": "Agent 服务状态（仅当 is_alive 为 true 时存在）"
+                  }
+                ]
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "tid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HttpResult_CancelResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "取消任务的响应",
+            "required": [
+              "success",
+              "session_id"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "description": "被取消的会话ID",
+                "example": "session456"
+              },
+              "success": {
+                "type": "boolean",
+                "description": "取消操作是否成功",
+                "example": true
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "tid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HttpResult_ChatResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "服务响应结构",
+            "required": [
+              "project_id",
+              "session_id"
+            ],
+            "properties": {
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "可选的错误信息"
+              },
+              "project_id": {
+                "type": "string",
+                "description": "项目 ID",
+                "example": "test_project"
+              },
+              "session_id": {
+                "type": "string",
+                "description": "会话 ID",
+                "example": "session456"
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "tid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HttpResult_StopAgentResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "停止Agent响应",
+            "required": [
+              "success",
+              "project_id",
+              "message"
+            ],
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "消息"
+              },
+              "project_id": {
+                "type": "string",
+                "description": "项目ID"
+              },
+              "session_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "会话ID（如果存在）"
+              },
+              "success": {
+                "type": "boolean",
+                "description": "是否成功停止"
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "tid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HttpResult_String": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "tid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ImageAttachment": {
+        "type": "object",
+        "description": "图像附件",
+        "required": [
+          "id",
+          "source",
+          "mime_type"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的描述"
+          },
+          "dimensions": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageDimensions",
+                "description": "可选的尺寸信息"
+              }
+            ]
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的文件名"
+          },
+          "id": {
+            "type": "string",
+            "description": "附件唯一标识"
+          },
+          "mime_type": {
+            "type": "string",
+            "description": "MIME 类型 (如: image/jpeg, image/png)"
+          },
+          "source": {
+            "$ref": "#/components/schemas/AttachmentSource",
+            "description": "数据源"
+          }
+        }
+      },
+      "ImageDimensions": {
+        "type": "object",
+        "description": "图像尺寸信息",
+        "required": [
+          "width",
+          "height"
+        ],
+        "properties": {
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "LoadBalancerInfo": {
+        "type": "object",
+        "description": "负载均衡器信息",
+        "required": [
+          "algorithm",
+          "health_check_enabled",
+          "backend_count"
+        ],
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "description": "负载均衡算法",
+            "example": "round-robin"
+          },
+          "backend_count": {
+            "type": "integer",
+            "description": "后端服务数量",
+            "example": 3,
+            "minimum": 0
+          },
+          "health_check_enabled": {
+            "type": "boolean",
+            "description": "是否启用健康检查",
+            "example": true
+          }
+        }
+      },
+      "ModelApiProtocol": {
+        "type": "string",
+        "description": "模型接口协议类型",
+        "enum": [
+          "anthropic",
+          "openai"
+        ]
+      },
+      "ModelProviderConfig": {
+        "type": "object",
+        "description": "模型提供商配置",
+        "required": [
+          "id",
+          "name",
+          "base_url",
+          "api_key",
+          "requires_openai_auth",
+          "default_model"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "密钥",
+            "example": "sk-..."
+          },
+          "api_protocol": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "模型接口协议类型 (anthropic/openai)，默认为 openai",
+            "example": "openai"
+          },
+          "base_url": {
+            "type": "string",
+            "description": "API 基础 URL",
+            "example": "https://api.openai.com/v1"
+          },
+          "default_model": {
+            "type": "string",
+            "description": "默认模型名称",
+            "example": "gpt-4"
+          },
+          "id": {
+            "type": "string",
+            "description": "模型id,确保唯一性",
+            "example": "id"
+          },
+          "name": {
+            "type": "string",
+            "description": "提供商名称 (如: glm, anthropic, openai, qwen, ernie, moonshot)",
+            "example": "openai"
+          },
+          "requires_openai_auth": {
+            "type": "boolean",
+            "description": "是否需要 OpenAI 兼容的认证",
+            "example": true
+          }
+        }
+      },
+      "ModelProviderSafeInfo": {
+        "type": "object",
+        "description": "模型提供商安全信息（不包含敏感字段）",
+        "required": [
+          "id",
+          "name",
+          "api_protocol",
+          "default_model"
+        ],
+        "properties": {
+          "api_protocol": {
+            "$ref": "#/components/schemas/ModelApiProtocol",
+            "description": "模型接口协议类型"
+          },
+          "default_model": {
+            "type": "string",
+            "description": "默认模型名称",
+            "example": "gpt-4"
+          },
+          "id": {
+            "type": "string",
+            "description": "模型id",
+            "example": "id"
+          },
+          "name": {
+            "type": "string",
+            "description": "提供商名称",
+            "example": "openai"
+          }
+        }
+      },
+      "PortStats": {
+        "type": "object",
+        "description": "端口统计信息",
+        "required": [
+          "port",
+          "requests",
+          "success_rate",
+          "avg_response_time_ms"
+        ],
+        "properties": {
+          "avg_response_time_ms": {
+            "type": "number",
+            "format": "double",
+            "description": "平均响应时间",
+            "example": 28.3
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "端口号",
+            "example": 3000,
+            "minimum": 0
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "请求数",
+            "example": 8560,
+            "minimum": 0
+          },
+          "success_rate": {
+            "type": "number",
+            "format": "double",
+            "description": "成功率",
+            "example": 0.987
+          }
+        }
+      },
+      "ProxyConfig": {
+        "type": "object",
+        "description": "代理配置信息",
+        "required": [
+          "listen_port",
+          "default_backend_port",
+          "default_backend_host",
+          "load_balancing_algorithm",
+          "health_check"
+        ],
+        "properties": {
+          "default_backend_host": {
+            "type": "string",
+            "description": "默认后端主机",
+            "example": "127.0.0.1"
+          },
+          "default_backend_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "默认后端端口",
+            "example": 3000,
+            "minimum": 0
+          },
+          "health_check": {
+            "$ref": "#/components/schemas/HealthCheckConfig",
+            "description": "健康检查配置"
+          },
+          "listen_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "监听端口",
+            "example": 8080,
+            "minimum": 0
+          },
+          "load_balancing_algorithm": {
+            "type": "string",
+            "description": "负载均衡算法",
+            "example": "round-robin"
+          }
+        }
+      },
+      "ProxyErrorResponse": {
+        "type": "object",
+        "description": "Pingora 代理错误响应",
+        "required": [
+          "error",
+          "message",
+          "target_port",
+          "timestamp"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "错误代码",
+            "example": "BACKEND_NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "description": "错误消息",
+            "example": "未找到端口 9999 对应的后端服务"
+          },
+          "target_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标端口",
+            "example": 9999,
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "请求时间戳",
+            "example": "2025-01-12T10:30:00Z"
+          }
+        }
+      },
+      "ProxyPathParams": {
+        "type": "object",
+        "description": "Pingora 代理路径参数",
+        "required": [
+          "port"
+        ],
+        "properties": {
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标端口号",
+            "example": 3000,
+            "minimum": 0
+          }
+        }
+      },
+      "ProxyPathWithTailParams": {
+        "type": "object",
+        "description": "Pingora 代理路径和尾部参数",
+        "required": [
+          "port",
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "路径尾部 (剩余的路径部分)",
+            "example": "/api/users"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标端口号",
+            "example": 3000,
+            "minimum": 0
+          }
+        }
+      },
+      "ProxyResponse": {
+        "type": "object",
+        "description": "Pingora 代理响应",
+        "required": [
+          "success",
+          "target_port",
+          "target_host",
+          "target_url",
+          "load_balancer"
+        ],
+        "properties": {
+          "load_balancer": {
+            "$ref": "#/components/schemas/LoadBalancerInfo",
+            "description": "负载均衡器信息"
+          },
+          "response_time_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "响应时间 (毫秒)",
+            "example": 45,
+            "minimum": 0
+          },
+          "success": {
+            "type": "boolean",
+            "description": "代理状态",
+            "example": true
+          },
+          "target_host": {
+            "type": "string",
+            "description": "目标主机",
+            "example": "127.0.0.1"
+          },
+          "target_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标端口",
+            "example": 3000,
+            "minimum": 0
+          },
+          "target_url": {
+            "type": "string",
+            "description": "目标URL",
+            "example": "http://127.0.0.1:3000/api/users"
+          }
+        }
+      },
+      "ProxyStats": {
+        "type": "object",
+        "description": "代理统计信息",
+        "required": [
+          "total_requests",
+          "successful_requests",
+          "failed_requests",
+          "avg_response_time_ms",
+          "active_connections",
+          "port_stats"
+        ],
+        "properties": {
+          "active_connections": {
+            "type": "integer",
+            "format": "int32",
+            "description": "当前活跃连接数",
+            "example": 12,
+            "minimum": 0
+          },
+          "avg_response_time_ms": {
+            "type": "number",
+            "format": "double",
+            "description": "平均响应时间 (毫秒)",
+            "example": 35.5
+          },
+          "failed_requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "失败请求数",
+            "example": 220,
+            "minimum": 0
+          },
+          "port_stats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortStats"
+            },
+            "description": "按端口统计"
+          },
+          "successful_requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "成功请求数",
+            "example": 15200,
+            "minimum": 0
+          },
+          "total_requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总请求数",
+            "example": 15420,
+            "minimum": 0
+          }
+        }
+      },
+      "ProxyStatus": {
+        "type": "object",
+        "description": "Pingora 代理状态信息",
+        "required": [
+          "status",
+          "listen_port",
+          "default_backend_port",
+          "default_backend_host",
+          "backends",
+          "load_balancer"
+        ],
+        "properties": {
+          "backends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackendInfo"
+            },
+            "description": "已配置的后端服务"
+          },
+          "default_backend_host": {
+            "type": "string",
+            "description": "默认后端主机",
+            "example": "127.0.0.1"
+          },
+          "default_backend_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "默认后端端口",
+            "example": 3000,
+            "minimum": 0
+          },
+          "listen_port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "监听端口",
+            "example": 8080,
+            "minimum": 0
+          },
+          "load_balancer": {
+            "$ref": "#/components/schemas/LoadBalancerInfo",
+            "description": "负载均衡配置"
+          },
+          "status": {
+            "type": "string",
+            "description": "代理服务状态",
+            "example": "running"
+          }
+        }
+      },
+      "SessionMessageType": {
+        "type": "string",
+        "description": "消息主类型枚举",
+        "enum": [
+          "sessionPromptStart",
+          "sessionPromptEnd",
+          "agentSessionUpdate",
+          "heartbeat"
+        ]
+      },
+      "SessionUpdateEvent": {
+        "type": "object",
+        "description": "SSE 事件响应结构",
+        "required": [
+          "event_type",
+          "session_id",
+          "message"
+        ],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "description": "事件类型"
+          },
+          "message": {
+            "$ref": "#/components/schemas/UnifiedSessionMessage",
+            "description": "统一会话消息"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "会话ID"
+          }
+        }
+      },
+      "StopAgentResponse": {
+        "type": "object",
+        "description": "停止Agent响应",
+        "required": [
+          "success",
+          "project_id",
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "消息"
+          },
+          "project_id": {
+            "type": "string",
+            "description": "项目ID"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "会话ID（如果存在）"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "是否成功停止"
+          }
+        }
+      },
+      "TextAttachment": {
+        "type": "object",
+        "description": "文本附件",
+        "required": [
+          "id",
+          "source"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的描述"
+          },
+          "filename": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的文件名"
+          },
+          "id": {
+            "type": "string",
+            "description": "附件唯一标识"
+          },
+          "source": {
+            "$ref": "#/components/schemas/AttachmentSource",
+            "description": "数据源"
+          }
+        }
+      },
+      "UnifiedSessionMessage": {
+        "type": "object",
+        "description": "统一的会话消息结构",
+        "required": [
+          "sessionId",
+          "messageType",
+          "subType",
+          "data",
+          "timestamp"
+        ],
+        "properties": {
+          "data": {
+            "description": "具体数据内容"
+          },
+          "messageType": {
+            "$ref": "#/components/schemas/SessionMessageType",
+            "description": "消息主类型"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "会话ID"
+          },
+          "subType": {
+            "type": "string",
+            "description": "消息子类型"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "时间戳"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "system",
+      "description": "系统健康检查和状态监控接口"
+    },
+    {
+      "name": "chat",
+      "description": "AI 聊天对话接口，支持多媒体内容"
+    },
+    {
+      "name": "agent",
+      "description": "AI 代理会话管理和实时通知接口"
+    },
+    {
+      "name": "proxy",
+      "description": "Pingora 反向代理接口，支持端口路由和负载均衡"
+    }
+  ]
+}

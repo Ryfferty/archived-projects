@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.knowledge.core.infra.dao.mapper.KnowledgeTaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeTask">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="kbId" column="kb_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="docId" column="doc_id" jdbcType="BIGINT"/>
+        <result property="type" column="type" jdbcType="TINYINT"/>
+        <result property="tid" column="tid" jdbcType="VARCHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="maxRetryCnt" column="max_retry_cnt" jdbcType="INTEGER"/>
+        <result property="retryCnt" column="retry_cnt" jdbcType="INTEGER"/>
+        <result property="result" column="result" jdbcType="VARCHAR"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+    </resultMap>
+
+
+    <select id="queryListForRetryByDays" resultMap="BaseResultMap">
+
+     <![CDATA[
+        select *
+        from knowledge_task
+        where status not in (2, 4)
+          and max_retry_cnt > retry_cnt
+          and type != 10
+          and created > DATE_SUB(NOW(), INTERVAL ${days} DAY)
+          and created < DATE_SUB(NOW(), INTERVAL 10 minute)
+        ]]>
+    </select>
+    <select id="queryListForArchiveByDaysAndSuccess" resultMap="BaseResultMap">
+  <![CDATA[
+        select *
+        from knowledge_task
+        where status = 1
+          and type = 10
+          and created < DATE_SUB(NOW(), INTERVAL ${days} DAY)
+        ]]>
+    </select>
+
+
+    <update id="incrementRetryCount">
+        <![CDATA[
+        update knowledge_task
+        set retry_cnt = retry_cnt + 1
+        where id = #{id}
+        ]]>
+    </update>
+
+</mapper>

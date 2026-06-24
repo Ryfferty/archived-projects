@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.system.infra.dao.mapper.UserReqMapper">
+
+    <!-- 插入或更新用户每日请求统计 -->
+    <insert id="insertOrUpdate">
+        INSERT INTO `user_req`
+            (`_tenant_id`, `user_id`, `dt`, `req_count`)
+        VALUES
+            (#{tenantId}, #{userId}, #{dt}, 1)
+        ON DUPLICATE KEY UPDATE
+            `req_count` = `req_count` + 1
+    </insert>
+
+    <!-- 插入或更新用户每日请求统计（使用当前日期） -->
+    <insert id="insertOrUpdateToday">
+        INSERT INTO `user_req`
+            (`_tenant_id`, `user_id`, `dt`, `req_count`)
+        VALUES
+            (#{tenantId}, #{userId}, DATE_FORMAT(NOW(), '%Y%m%d'), 1)
+        ON DUPLICATE KEY UPDATE
+            `req_count` = `req_count` + 1
+    </insert>
+
+</mapper>

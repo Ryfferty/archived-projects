@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-modules</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+    <groupId>com.xspaceagi</groupId>
+    <artifactId>app-platform-agent</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>app-platform-agent-core-spec</module>
+        <module>app-platform-agent-core-infra</module>
+        <module>app-platform-agent-core-application</module>
+        <module>app-platform-agent-core-domain</module>
+        <module>app-platform-agent-core-ui</module>
+        <module>app-platform-agent-core-adapter</module>
+        <module>app-platform-agent-core-sdk</module>
+    </modules>
+
+</project>

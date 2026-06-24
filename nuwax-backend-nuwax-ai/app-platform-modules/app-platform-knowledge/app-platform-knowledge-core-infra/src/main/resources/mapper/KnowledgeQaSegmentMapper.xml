@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xspaceagi.knowledge.core.infra.dao.mapper.KnowledgeQaSegmentMapper">
+
+    <resultMap id="BaseResultMap" type="com.xspaceagi.knowledge.core.infra.dao.entity.KnowledgeQaSegment">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="docId" column="doc_id" jdbcType="BIGINT"/>
+        <result property="question" column="question" jdbcType="VARCHAR"/>
+        <result property="answer" column="answer" jdbcType="VARCHAR"/>
+        <result property="kbId" column="kb_id" jdbcType="BIGINT"/>
+        <result property="hasEmbedding" column="has_embedding" jdbcType="TINYINT"/>
+        <result property="tenantId" column="_tenant_id" jdbcType="BIGINT"/>
+        <result property="spaceId" column="space_id" jdbcType="BIGINT"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="BIGINT"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="modifiedId" column="modified_id" jdbcType="BIGINT"/>
+        <result property="modifiedName" column="modified_name" jdbcType="VARCHAR"/>
+        <result property="yn" column="yn" jdbcType="TINYINT"/>
+    </resultMap>
+
+
+    <resultMap id="embeddingStatusDtoMap" type="com.xspaceagi.knowledge.domain.dto.EmbeddingStatusDto">
+        <result property="docId" column="doc_id"/>
+        <result property="qaCount" column="qaCount"/>
+        <result property="qaEmbeddingCount" column="qaEmbeddingCount"/>
+    </resultMap>
+
+    <!--后端业务逻辑,公共查询逻辑1-->
+    <sql id="font_base_where">
+        <if test="queryMap.authSpaceIds != null and queryMap.authSpaceIds.size > 0">
+            and space_id in
+            <foreach collection="queryMap.authSpaceIds" item="item" index="index" separator="," open="("
+                     close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="queryMap.spaceId != null">
+            and space_id = #{queryMap.spaceId}
+        </if>
+        <if test="queryMap.kbId != null">
+            and kb_id = #{queryMap.kbId}
+        </if>
+        <if test="queryMap.question != null and queryMap.question != ''">
+            and question like concat('%',#{queryMap.question},'%')
+        </if>
+
+        <include refid="SysCommonSql.base_where"></include>
+        and yn = 1
+
+    </sql>
+
+
+    <select id="queryTotal" resultType="java.lang.Long">
+        select count(*)
+        from knowledge_qa_segment
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+    </select>
+
+    <select id="queryList" resultMap="BaseResultMap">
+        select
+        *
+        from knowledge_qa_segment
+        <where>
+            <include refid="font_base_where"></include>
+        </where>
+        <choose>
+            <when test="orderColumns != null and  orderColumns.size > 0">
+                <foreach collection="orderColumns" item="entity" index="index" separator="," open="order by " close="">
+                    <if test="entity != null">
+                        ${entity.column}
+                        <if test="!entity.asc">
+                            desc
+                        </if>
+                    </if>
+                </foreach>
+            </when>
+            <otherwise>
+                order by created desc
+            </otherwise>
+        </choose>
+        limit #{startIndex}, #{pageSize}
+    </select>
+
+
+    <select id="queryEmbeddingStatus" resultMap="embeddingStatusDtoMap">
+
+        select doc_id,
+               count(*)                                              qaCount,
+               sum(case when has_embedding = 1 then 1 else 0 end) as qaEmbeddingCount
+        from knowledge_qa_segment
+        where yn = 1
+          and doc_id = #{docId}
+        group by doc_id
+
+    </select>
+
+    <select id="queryListForEmbeddingQaAndEmbeddings" resultMap="BaseResultMap">
+        select *
+        from knowledge_qa_segment
+        where yn = 1
+        and has_embedding = 0
+        and doc_id != 0
+        and created > DATE_SUB(NOW(), INTERVAL #{day} DAY)
+        limit #{startIndex}, #{endIndex}
+        order by id desc
+    </select>
+
+    <select id="queryListForEmbeddingQaAndEmbeddingsAndRawIdIsNull" resultMap="BaseResultMap">
+        select *
+        from knowledge_qa_segment
+        where yn = 1
+        and has_embedding = 0
+        and  doc_id = 0
+        and created > DATE_SUB(NOW(), INTERVAL #{day} DAY)
+        limit #{startIndex}, #{endIndex}
+        order by id desc
+    </select>
+
+</mapper>

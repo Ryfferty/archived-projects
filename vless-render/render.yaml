@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: vless-proxy
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: VLESS_UUID
+        generateValue: false
+      - key: NODE_ENV
+        value: production

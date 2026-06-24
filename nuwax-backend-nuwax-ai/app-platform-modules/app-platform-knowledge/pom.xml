@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xspaceagi</groupId>
+        <artifactId>app-platform-modules</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>app-platform-knowledge</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>app-platform-knowledge-core-adapter</module>
+        <module>app-platform-knowledge-core-spec</module>
+        <module>app-platform-knowledge-core-application</module>
+        <module>app-platform-knowledge-core-domain</module>
+        <module>app-platform-knowledge-core-infra</module>
+        <module>app-platform-knowledge-core-ui</module>
+        <module>app-platform-knowledge-sdk</module>
+        <module>app-platform-knowledge-api</module>
+    </modules>
+
+</project>
